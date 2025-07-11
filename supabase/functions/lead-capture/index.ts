@@ -139,7 +139,18 @@ serve(async (req) => {
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .insert([leadData])
-      .select()
+      .select(`
+        id,
+        name,
+        email,
+        whatsapp,
+        course_id,
+        event_id,
+        status_id,
+        courses(name),
+        events(name),
+        lead_statuses(name, color)
+      `)
       .single();
 
     if (leadError) {
@@ -268,7 +279,7 @@ serve(async (req) => {
                   console.log('✅ Recipient criado com sucesso');
                 }
 
-                // Preparar dados para envio - APENAS PARA O NOVO LEAD
+                // Preparar dados específicos APENAS para o novo lead
                 const webhookData = {
                   message_id: messageHistory.id,
                   delivery_code: deliveryCode,
@@ -276,24 +287,25 @@ serve(async (req) => {
                   content: defaultTemplate.content,
                   filter_type: 'auto_new_lead',
                   filter_value: lead.id,
-                  send_only_to_new: false, // Não importa pois estamos enviando dados específicos
+                  send_only_to_new: false,
                   total_recipients: 1,
                   leads: [{
                     id: lead.id,
                     name: lead.name,
                     email: lead.email || null,
                     whatsapp: lead.whatsapp || null,
-                    course: null,
-                    event: null,
-                    status: null,
-                    status_color: null
+                    course: lead.courses?.name || null,
+                    event: lead.events?.name || null,
+                    status: lead.lead_statuses?.name || null,
+                    status_color: lead.lead_statuses?.color || null
                   }],
                   timestamp: new Date().toISOString(),
                   callback_url: `${supabaseUrl}/functions/v1/message-delivery-webhook-endpoint`
                 };
 
-                console.log('📤 ENVIANDO dados para webhook:', {
+                console.log('📤 ENVIANDO dados ESPECÍFICOS do novo lead para webhook:', {
                   url: whatsappWebhookUrl,
+                  leadId: lead.id,
                   leadName: lead.name,
                   leadWhatsapp: lead.whatsapp,
                   messageContent: defaultTemplate.content.substring(0, 50) + '...',
@@ -339,7 +351,7 @@ serve(async (req) => {
                       })
                       .eq('message_history_id', messageHistory.id);
 
-                    console.log('✅ SUCESSO! Mensagem automática enviada para o novo lead!');
+                    console.log('✅ SUCESSO! Mensagem automática enviada APENAS para o novo lead!');
                   } else {
                     console.error('❌ FALHA no webhook:', response.status, responseText);
                     
