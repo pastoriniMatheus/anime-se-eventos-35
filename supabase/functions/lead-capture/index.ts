@@ -235,7 +235,7 @@ serve(async (req) => {
             const webhookUrls = JSON.parse(webhookSetting.value);
             const whatsappWebhookUrl = webhookUrls.whatsapp;
             
-            console.log('🌐 URL do webhook WhatsApp:', whatsappWebhookUrl ? 'CONFIGURADA' : 'NÃO CONFIGURADA');
+            console.log('🌐 URL do webhook WhatsApp:', whatsappWebhookUrl);
             
             if (whatsappWebhookUrl && whatsappWebhookUrl.trim() !== '') {
               console.log('🚀 INICIANDO envio de mensagem automática para o novo lead:', lead.name);
@@ -303,7 +303,7 @@ serve(async (req) => {
                   callback_url: `${supabaseUrl}/functions/v1/message-delivery-webhook-endpoint`
                 };
 
-                console.log('📤 ENVIANDO dados ESPECÍFICOS do novo lead para webhook:', {
+                console.log('📤 ENVIANDO dados do lead para webhook:', {
                   url: whatsappWebhookUrl,
                   leadId: lead.id,
                   leadName: lead.name,
@@ -312,37 +312,40 @@ serve(async (req) => {
                   deliveryCode: deliveryCode
                 });
 
-                // Chamar webhook
+                // Chamar webhook com headers apropriados e timeout
                 try {
-                  const response = await fetch(whatsappWebhookUrl, {
+                  const webhookResponse = await fetch(whatsappWebhookUrl, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
                       'Accept': 'application/json',
-                      'User-Agent': 'Supabase-Lead-System/1.0'
+                      'User-Agent': 'Supabase-Lead-System/1.0',
+                      'X-Webhook-Source': 'lead-capture-auto-message'
                     },
-                    body: JSON.stringify(webhookData)
+                    body: JSON.stringify(webhookData),
+                    signal: AbortSignal.timeout(30000) // 30 segundos timeout
                   });
 
-                  const responseText = await response.text();
+                  const responseText = await webhookResponse.text();
                   console.log('📨 RESPOSTA do webhook:', {
-                    status: response.status,
-                    ok: response.ok,
-                    response: responseText.substring(0, 200)
+                    status: webhookResponse.status,
+                    statusText: webhookResponse.statusText,
+                    ok: webhookResponse.ok,
+                    response: responseText.substring(0, 500)
                   });
 
                   // Atualizar status baseado na resposta
-                  const finalStatus = response.ok ? 'sent' : 'failed';
+                  const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
                   await supabase
                     .from('message_history')
                     .update({ 
                       status: finalStatus,
-                      webhook_response: responseText 
+                      webhook_response: `${webhookResponse.status}: ${responseText}` 
                     })
                     .eq('id', messageHistory.id);
 
                   // Atualizar status do recipient
-                  if (response.ok) {
+                  if (webhookResponse.ok) {
                     await supabase
                       .from('message_recipients')
                       .update({ 
@@ -351,15 +354,15 @@ serve(async (req) => {
                       })
                       .eq('message_history_id', messageHistory.id);
 
-                    console.log('✅ SUCESSO! Mensagem automática enviada APENAS para o novo lead!');
+                    console.log('✅ SUCESSO! Mensagem automática enviada para o webhook!');
                   } else {
-                    console.error('❌ FALHA no webhook:', response.status, responseText);
+                    console.error('❌ FALHA no webhook:', webhookResponse.status, responseText);
                     
                     await supabase
                       .from('message_recipients')
                       .update({ 
                         delivery_status: 'failed',
-                        error_message: `Webhook error: ${response.status} - ${responseText}`
+                        error_message: `Webhook error: ${webhookResponse.status} - ${responseText}`
                       })
                       .eq('message_history_id', messageHistory.id);
                   }
@@ -371,7 +374,7 @@ serve(async (req) => {
                     .from('message_history')
                     .update({ 
                       status: 'failed',
-                      webhook_response: webhookError.message 
+                      webhook_response: `Error: ${webhookError.message}` 
                     })
                     .eq('id', messageHistory.id);
                     
