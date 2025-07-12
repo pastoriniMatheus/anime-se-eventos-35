@@ -38,11 +38,11 @@ serve(async (req) => {
 
     console.log('🔄 Iniciando validação para número:', whatsapp, 'ID:', validation_id);
 
-    // Buscar webhook de verificação nas configurações
+    // Buscar configurações de webhook
     const { data: settings, error: settingsError } = await supabase
       .from('system_settings')
       .select('*')
-      .eq('key', 'whatsapp_validation_webhook')
+      .eq('key', 'webhook_urls')
       .single();
 
     if (settingsError) {
@@ -54,14 +54,38 @@ serve(async (req) => {
     }
 
     if (!settings?.value) {
-      console.log('❌ Webhook não configurado');
+      console.log('❌ Configurações de webhook não encontradas');
+      return new Response('Webhook configurations not found', { 
+        status: 400,
+        headers: corsHeaders 
+      });
+    }
+
+    // Parse das configurações
+    let webhookUrls;
+    try {
+      webhookUrls = typeof settings.value === 'string' 
+        ? JSON.parse(settings.value) 
+        : settings.value;
+    } catch (parseError) {
+      console.error('❌ Erro ao fazer parse das configurações:', parseError);
+      return new Response('Invalid webhook configuration format', { 
+        status: 400,
+        headers: corsHeaders 
+      });
+    }
+
+    const validationWebhook = webhookUrls?.whatsappValidation;
+
+    if (!validationWebhook) {
+      console.log('❌ Webhook de validação WhatsApp não configurado');
       return new Response('WhatsApp validation webhook not configured', { 
         status: 400,
         headers: corsHeaders 
       });
     }
 
-    console.log('📡 Webhook configurado:', settings.value);
+    console.log('📡 Webhook configurado:', validationWebhook);
 
     // Verificar se já existe validação com este ID
     const { data: existingValidation } = await supabase
@@ -109,7 +133,7 @@ serve(async (req) => {
 
     console.log('✅ Validação criada:', validation);
 
-    // Enviar para webhook externo sem headers de autorização - COMPLETAMENTE PÚBLICO
+    // Enviar para webhook externo
     try {
       console.log('📤 Enviando para webhook externo...');
       
@@ -125,7 +149,7 @@ serve(async (req) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const webhookResponse = await fetch(settings.value, {
+      const webhookResponse = await fetch(validationWebhook, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +221,7 @@ serve(async (req) => {
         error: 'Webhook error',
         details: errorMessage,
         validation_id,
-        webhook_url: settings.value
+        webhook_url: validationWebhook
       }), { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

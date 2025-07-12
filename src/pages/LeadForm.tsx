@@ -343,22 +343,49 @@ const LeadForm = () => {
         return false;
       }
 
-      // VALIDAÇÃO DO WHATSAPP É OBRIGATÓRIA
-      console.log('[LeadForm] Verificando validação do WhatsApp...');
+      // VALIDAÇÃO AUTOMÁTICA DO WHATSAPP
+      console.log('[LeadForm] Iniciando validação automática do WhatsApp...');
       
-      if (validationResult !== 'valid') {
-        console.log('[LeadForm] WhatsApp não foi validado');
-        toast({
-          title: "Validação obrigatória",
-          description: "É necessário validar seu número de WhatsApp antes de prosseguir. Clique no botão 'Validar'.",
-          variant: "destructive",
-        });
+      // Se já foi validado com sucesso, pode prosseguir
+      if (validationResult === 'valid') {
+        console.log('[LeadForm] WhatsApp já validado, prosseguindo...');
+        
+        // Verificar se o lead já existe
+        try {
+          console.log('[LeadForm] Verificando lead existente...');
+          const existingLeadData = await checkExistingLead({
+            name: formData.name,
+            whatsapp: formData.whatsapp,
+            email: formData.email
+          });
+
+          if (existingLeadData) {
+            console.log('[LeadForm] Lead existente encontrado:', existingLeadData);
+            setExistingLead(existingLeadData);
+            setLeadId(existingLeadData.id);
+            setShowExistingUser(true);
+            return false; // Para não avançar para próxima etapa
+          }
+        } catch (error) {
+          console.error('[LeadForm] Erro ao verificar lead existente:', error);
+          // Continue normalmente se houver erro na verificação
+        }
+        
+        return true;
+      }
+
+      // Se não foi validado ainda, fazer a validação agora
+      console.log('[LeadForm] Executando validação do WhatsApp...');
+      const isValid = await validateWhatsApp(formData.whatsapp);
+      
+      if (!isValid) {
+        console.log('[LeadForm] Validação do WhatsApp falhou');
         return false;
       }
 
-      console.log('[LeadForm] WhatsApp validado com sucesso, prosseguindo...');
+      console.log('[LeadForm] WhatsApp validado com sucesso, verificando lead existente...');
 
-      // Verificar se o lead já existe
+      // Verificar se o lead já existe após validação
       try {
         console.log('[LeadForm] Verificando lead existente...');
         const existingLeadData = await checkExistingLead({
@@ -535,7 +562,6 @@ const LeadForm = () => {
                     onFormDataChange={handleChange}
                     validationResult={validationResult}
                     isValidating={isValidating}
-                    onValidateWhatsApp={handleValidateWhatsApp}
                   />
                 )}
 
@@ -591,7 +617,7 @@ const LeadForm = () => {
                     className="px-8 lead-form-step-button hover:opacity-90 font-semibold"
                     disabled={isLoading || isValidating || isCheckingExisting}
                   >
-                    {isLoading || isCheckingExisting ? 'Verificando...' : (currentStep === 2 && !paymentEnabled ? 'Finalizar Cadastro' : 'Próximo')}
+                    {isLoading || isCheckingExisting || isValidating ? 'Verificando...' : (currentStep === 2 && !paymentEnabled ? 'Finalizar Cadastro' : 'Próximo')}
                   </Button>
                 ) : null}
               </div>

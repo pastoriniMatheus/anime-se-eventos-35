@@ -27,15 +27,47 @@ export const useWhatsAppValidation = () => {
     try {
       console.log('🔄 Iniciando validação WhatsApp para:', numbers);
 
-      // Buscar configuração do webhook de validação WhatsApp
+      // Buscar configuração do webhook de validação WhatsApp - corrigindo a busca
       const { data: settings, error: settingsError } = await supabase
         .from('system_settings')
         .select('*')
-        .eq('key', 'whatsapp_validation_webhook')
+        .eq('key', 'webhook_urls')
         .single();
 
       if (settingsError || !settings?.value) {
-        console.log('❌ Webhook de validação WhatsApp não configurado:', settingsError);
+        console.log('❌ Configurações de webhook não encontradas:', settingsError);
+        setIsValidating(false);
+        setValidationResult('invalid');
+        toast({
+          title: "Configuração necessária",
+          description: "As configurações de webhook não estão disponíveis. Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Parse das configurações de webhook
+      let webhookUrls;
+      try {
+        webhookUrls = typeof settings.value === 'string' 
+          ? JSON.parse(settings.value) 
+          : settings.value;
+      } catch (parseError) {
+        console.log('❌ Erro ao fazer parse das configurações:', parseError);
+        setIsValidating(false);
+        setValidationResult('invalid');
+        toast({
+          title: "Erro de configuração",
+          description: "Configurações de webhook inválidas. Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const validationWebhook = webhookUrls?.whatsappValidation;
+      
+      if (!validationWebhook) {
+        console.log('❌ Webhook de validação WhatsApp não configurado');
         setIsValidating(false);
         setValidationResult('invalid');
         toast({
@@ -46,7 +78,7 @@ export const useWhatsAppValidation = () => {
         return false;
       }
 
-      console.log('✅ Webhook de validação encontrado:', settings.value);
+      console.log('✅ Webhook de validação encontrado:', validationWebhook);
 
       // Gerar ID único para a validação
       const validationId = crypto.randomUUID();
@@ -110,11 +142,6 @@ export const useWhatsAppValidation = () => {
                 setValidationResult('valid');
                 setIsValidating(false);
                 console.log('✅ Número validado com sucesso!');
-                toast({
-                  title: "WhatsApp validado",
-                  description: "Número verificado com sucesso!",
-                  variant: "default",
-                });
                 return true;
               } else if (validation.status === 'invalid') {
                 setValidationResult('invalid');
