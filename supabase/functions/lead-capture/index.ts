@@ -129,9 +129,11 @@ serve(async (req) => {
         email,
         whatsapp,
         course_id,
+        postgraduate_course_id,
         event_id,
         status_id,
         courses(name),
+        postgraduate_courses(name),
         events(name),
         lead_statuses(name, color)
       `)
@@ -169,95 +171,75 @@ serve(async (req) => {
       }
     }
 
-    // ============= DIAGNÓSTICO DETALHADO DO WEBHOOK =============
-    console.log('🔍 === INICIANDO DIAGNÓSTICO COMPLETO DO WEBHOOK ===');
+    // ============= ENVIO AUTOMÁTICO DE WEBHOOK =============
+    console.log('🔍 === VERIFICANDO ENVIO AUTOMÁTICO ===');
     
     try {
-      // 1. VERIFICAR TODAS AS SYSTEM_SETTINGS
-      console.log('📊 PASSO 1: Listando TODAS as system_settings...');
+      // 1. VERIFICAR SE ENVIO AUTOMÁTICO ESTÁ HABILITADO
       const { data: allSettings, error: allSettingsError } = await supabase
         .from('system_settings')
         .select('*');
 
-      console.log('📋 TODAS AS CONFIGURAÇÕES:', {
+      console.log('📊 CONFIGURAÇÕES ENCONTRADAS:', {
         total: allSettings?.length || 0,
         settings: allSettings?.map(s => ({ key: s.key, value: s.value })) || [],
         error: allSettingsError?.message
       });
 
-      // 2. VERIFICAR AUTO_MESSAGE_ENABLED ESPECIFICAMENTE
       const autoMessageSetting = allSettings?.find(s => s.key === 'auto_message_enabled');
       console.log('🤖 AUTO MESSAGE ENABLED:', {
         found: !!autoMessageSetting,
         value: autoMessageSetting?.value,
-        type: typeof autoMessageSetting?.value,
-        is_true_string: autoMessageSetting?.value === 'true',
-        full_setting: autoMessageSetting
+        is_enabled: autoMessageSetting?.value === 'true'
       });
 
       if (!autoMessageSetting || autoMessageSetting.value !== 'true') {
-        console.log('🚫 ENVIO AUTOMÁTICO DESABILITADO - Retornando sem enviar webhook');
+        console.log('🚫 ENVIO AUTOMÁTICO DESABILITADO');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
           message: 'Lead criado com sucesso!',
-          auto_send_status: 'disabled',
-          debug_info: {
-            auto_message_enabled: autoMessageSetting?.value || 'não encontrado'
-          }
+          auto_send_status: 'disabled'
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      console.log('✅ ENVIO AUTOMÁTICO HABILITADO - Prosseguindo...');
+      console.log('✅ ENVIO AUTOMÁTICO HABILITADO');
 
-      // 3. VERIFICAR WEBHOOK_URLS ESPECIFICAMENTE
+      // 2. BUSCAR WEBHOOK URL
       const webhookSetting = allSettings?.find(s => s.key === 'webhook_urls');
       console.log('🌐 WEBHOOK URLS SETTING:', {
         found: !!webhookSetting,
-        raw_value: webhookSetting?.value,
-        type: typeof webhookSetting?.value,
-        full_setting: webhookSetting
+        raw_value: webhookSetting?.value
       });
 
       if (!webhookSetting?.value) {
-        console.log('❌ WEBHOOK_URLS NÃO ENCONTRADO');
+        console.log('❌ WEBHOOK_URLS NÃO CONFIGURADO');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
-          message: 'Lead criado! (Webhook URLs não configurado)',
-          auto_send_status: 'no_webhook_config',
-          debug_info: {
-            webhook_setting_found: !!webhookSetting,
-            webhook_value: webhookSetting?.value || 'null'
-          }
+          message: 'Lead criado! (Webhook não configurado)',
+          auto_send_status: 'no_webhook_config'
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      // 4. FAZER PARSE DAS WEBHOOK URLS
       let webhookUrls;
       let whatsappWebhookUrl;
       
       try {
-        if (typeof webhookSetting.value === 'string') {
-          webhookUrls = JSON.parse(webhookSetting.value);
-        } else {
-          webhookUrls = webhookSetting.value;
-        }
-        
+        webhookUrls = typeof webhookSetting.value === 'string' 
+          ? JSON.parse(webhookSetting.value) 
+          : webhookSetting.value;
         whatsappWebhookUrl = webhookUrls?.whatsapp;
         
         console.log('🔗 WEBHOOK URLS PARSEADAS:', {
-          parse_successful: true,
           all_urls: webhookUrls,
-          whatsapp_url: whatsappWebhookUrl,
-          whatsapp_url_length: whatsappWebhookUrl?.length || 0,
-          has_whatsapp: !!whatsappWebhookUrl && whatsappWebhookUrl.trim() !== ''
+          whatsapp_url: whatsappWebhookUrl
         });
         
       } catch (parseError) {
@@ -266,11 +248,7 @@ serve(async (req) => {
           success: true, 
           leadId: lead.id,
           message: 'Lead criado! (Erro no formato das URLs do webhook)',
-          auto_send_status: 'webhook_parse_error',
-          debug_info: {
-            raw_value: webhookSetting.value,
-            parse_error: parseError.message
-          }
+          auto_send_status: 'webhook_parse_error'
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -283,19 +261,15 @@ serve(async (req) => {
           success: true, 
           leadId: lead.id,
           message: 'Lead criado! (URL do webhook WhatsApp não configurada)',
-          auto_send_status: 'empty_whatsapp_url',
-          debug_info: {
-            webhook_urls: webhookUrls,
-            whatsapp_url: whatsappWebhookUrl || 'vazio'
-          }
+          auto_send_status: 'empty_whatsapp_url'
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      // 5. VERIFICAR TEMPLATES
-      console.log('📄 PASSO 5: Verificando templates...');
+      // 3. BUSCAR TEMPLATE PADRÃO
+      console.log('📄 BUSCANDO TEMPLATE PADRÃO...');
       const { data: templates, error: templateError } = await supabase
         .from('message_templates')
         .select('*');
@@ -305,46 +279,36 @@ serve(async (req) => {
         templates: templates?.map(t => ({ 
           id: t.id, 
           name: t.name, 
-          is_default: t.is_default,
-          content_length: t.content?.length || 0
+          is_default: t.is_default
         })) || [],
         error: templateError?.message
       });
 
       const defaultTemplate = templates?.find(t => t.is_default);
-      console.log('⭐ TEMPLATE PADRÃO:', {
-        found: !!defaultTemplate,
-        template: defaultTemplate ? {
-          id: defaultTemplate.id,
-          name: defaultTemplate.name,
-          content_preview: defaultTemplate.content?.substring(0, 100) + '...'
-        } : null
-      });
-
+      
       if (!defaultTemplate) {
         console.log('❌ NENHUM TEMPLATE PADRÃO ENCONTRADO');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
           message: 'Lead criado! (Nenhum template padrão definido)',
-          auto_send_status: 'no_default_template',
-          debug_info: {
-            total_templates: templates?.length || 0,
-            templates_with_default: templates?.filter(t => t.is_default).length || 0
-          }
+          auto_send_status: 'no_default_template'
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      // 6. TUDO OK - PREPARAR ENVIO
-      console.log('🎯 TUDO VERIFICADO - PREPARANDO ENVIO DO WEBHOOK');
-      console.log('📤 URL DE DESTINO:', whatsappWebhookUrl);
-      
+      console.log('⭐ TEMPLATE PADRÃO ENCONTRADO:', {
+        id: defaultTemplate.id,
+        name: defaultTemplate.name
+      });
+
+      // 4. GERAR CÓDIGO DE ENTREGA
       const deliveryCode = `AUTO-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       
-      // 7. CRIAR HISTÓRICO
+      // 5. CRIAR HISTÓRICO DE MENSAGEM
+      console.log('📝 CRIANDO HISTÓRICO DE MENSAGEM...');
       const { data: messageHistory, error: historyError } = await supabase
         .from('message_history')
         .insert({
@@ -365,7 +329,7 @@ serve(async (req) => {
         console.log('✅ HISTÓRICO CRIADO - ID:', messageHistory.id);
       }
       
-      // 8. CRIAR RECIPIENT
+      // 6. CRIAR RECIPIENT
       if (messageHistory) {
         const { error: recipientError } = await supabase
           .from('message_recipients')
@@ -382,26 +346,39 @@ serve(async (req) => {
         }
       }
 
-      // 9. PREPARAR PAYLOAD
+      // 7. PREPARAR PAYLOAD NO FORMATO PADRONIZADO
       const webhookPayload = {
-        phone: lead.whatsapp,
-        message: defaultTemplate.content,
-        lead_id: lead.id,
-        lead_name: lead.name,
-        delivery_code: deliveryCode,
-        template_name: defaultTemplate.name,
-        timestamp: new Date().toISOString()
+        type: "whatsapp",
+        content: defaultTemplate.content,
+        filter_type: "auto_new_lead",
+        filter_value: lead.id,
+        send_only_to_new: false,
+        total_recipients: 1,
+        leads: [{
+          id: lead.id,
+          name: lead.name,
+          email: lead.email,
+          whatsapp: lead.whatsapp,
+          course: lead.courses?.name || lead.postgraduate_courses?.name || null,
+          event: lead.events?.name || null,
+          status: lead.lead_statuses?.name || null,
+          status_color: lead.lead_statuses?.color || null
+        }],
+        timestamp: new Date().toISOString(),
+        callback_url: `${supabaseUrl}/functions/v1/message-delivery-webhook-endpoint`,
+        message_id: messageHistory?.id || null,
+        delivery_code: deliveryCode
       };
 
-      console.log('📦 PAYLOAD FINAL:', {
-        phone: webhookPayload.phone,
-        message_length: webhookPayload.message?.length,
-        lead_id: webhookPayload.lead_id,
+      console.log('📦 PAYLOAD PADRONIZADO CRIADO:', {
+        type: webhookPayload.type,
+        total_recipients: webhookPayload.total_recipients,
+        lead_name: webhookPayload.leads[0].name,
         delivery_code: webhookPayload.delivery_code,
-        full_payload: webhookPayload
+        webhook_url: whatsappWebhookUrl
       });
 
-      // 10. ENVIAR WEBHOOK
+      // 8. ENVIAR WEBHOOK
       console.log('🚀 ENVIANDO WEBHOOK PARA:', whatsappWebhookUrl);
       
       const webhookResponse = await fetch(whatsappWebhookUrl, {
@@ -418,17 +395,14 @@ serve(async (req) => {
 
       const responseText = await webhookResponse.text();
       
-      console.log('📨 RESPOSTA COMPLETA DO WEBHOOK:', {
+      console.log('📨 RESPOSTA DO WEBHOOK:', {
         url: whatsappWebhookUrl,
         status: webhookResponse.status,
-        statusText: webhookResponse.statusText,
         ok: webhookResponse.ok,
-        headers: Object.fromEntries(webhookResponse.headers.entries()),
-        response_body: responseText,
-        response_length: responseText?.length || 0
+        response_body: responseText
       });
 
-      // 11. ATUALIZAR STATUS
+      // 9. ATUALIZAR STATUS
       if (messageHistory) {
         const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
         
@@ -462,7 +436,7 @@ serve(async (req) => {
             url: whatsappWebhookUrl,
             status: webhookResponse.status,
             delivery_code: deliveryCode,
-            response: responseText
+            message_id: messageHistory?.id
           }
         }), {
           status: 200,
@@ -496,8 +470,7 @@ serve(async (req) => {
         message: 'Lead criado! (Erro no processamento do webhook automático)',
         auto_send_status: 'processing_error',
         error_details: {
-          message: webhookError.message,
-          stack: webhookError.stack
+          message: webhookError.message
         }
       }), {
         status: 200,
