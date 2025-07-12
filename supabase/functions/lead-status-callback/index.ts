@@ -123,7 +123,7 @@ serve(async (req) => {
 
     console.log('✅ Lead atualizado com sucesso:', updatedLead);
 
-    // ============= VERIFICAR ENVIO AUTOMÁTICO DE CONVERSÃO =============
+    // VERIFICAR ENVIO AUTOMÁTICO DE CONVERSÃO
     console.log('🔍 === INICIANDO VERIFICAÇÃO DE CONVERSÃO ===');
     
     try {
@@ -218,8 +218,9 @@ serve(async (req) => {
                 }
 
                 if (whatsappWebhookUrl) {
-                  // 6. GERAR CÓDIGO DE ENTREGA
+                  // 6. GERAR CÓDIGO DE ENTREGA ÚNICO
                   const deliveryCode = `CONV-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+                  console.log('🏷️ CÓDIGO DE ENTREGA GERADO:', deliveryCode);
 
                   // 7. CRIAR HISTÓRICO DE MENSAGEM
                   const { data: messageHistory, error: historyError } = await supabase
@@ -239,6 +240,7 @@ serve(async (req) => {
                   console.log('📋 HISTÓRICO DE MENSAGEM CRIADO:', {
                     created: !!messageHistory,
                     message_id: messageHistory?.id,
+                    delivery_code: deliveryCode,
                     error: historyError?.message
                   });
 
@@ -256,6 +258,7 @@ serve(async (req) => {
 
                     console.log('👤 RECIPIENT CRIADO:', {
                       created: !!recipient,
+                      recipient_id: recipient?.id,
                       error: recipientError?.message
                     });
 
@@ -327,6 +330,7 @@ serve(async (req) => {
 
                       console.log('📝 HISTÓRICO ATUALIZADO:', {
                         status: finalStatus,
+                        message_id: messageHistory.id,
                         error: updateHistoryError?.message
                       });
 
@@ -342,6 +346,7 @@ serve(async (req) => {
 
                       console.log('👤 RECIPIENT ATUALIZADO:', {
                         status: webhookResponse.ok ? 'sent' : 'failed',
+                        recipient_id: recipient?.id,
                         error: updateRecipientError?.message
                       });
 

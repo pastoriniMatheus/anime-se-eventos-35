@@ -2,6 +2,8 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeadStatus {
   id: string;
@@ -28,6 +30,31 @@ const MessageFilters = ({
   courses,
   events
 }: MessageFiltersProps) => {
+  // Buscar status diretamente do banco para garantir que estão atualizados
+  const { data: freshLeadStatuses = [] } = useQuery({
+    queryKey: ['lead_statuses_for_filter'],
+    queryFn: async () => {
+      console.log('🔍 Buscando status para filtro...');
+      const { data, error } = await supabase
+        .from('lead_statuses')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error('❌ Erro ao buscar status:', error);
+        throw error;
+      }
+      
+      console.log('📊 Status encontrados para filtro:', data);
+      return data || [];
+    }
+  });
+
+  // Usar os status mais frescos ou os passados por props
+  const statusesToUse = freshLeadStatuses.length > 0 ? freshLeadStatuses : leadStatuses;
+
+  console.log('🎯 Status sendo usados no filtro:', statusesToUse);
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -70,9 +97,15 @@ const MessageFilters = ({
                   {event.name}
                 </SelectItem>
               ))}
-              {filterType === 'status' && leadStatuses.map((status) => (
+              {filterType === 'status' && statusesToUse.map((status: LeadStatus) => (
                 <SelectItem key={status.id} value={status.id}>
-                  {status.name}
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: status.color }}
+                    />
+                    <span>{status.name}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

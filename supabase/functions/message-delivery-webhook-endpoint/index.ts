@@ -100,19 +100,76 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Chamar a função do banco para confirmar a entrega
-    const { data, error } = await supabaseClient.rpc('confirm_message_delivery', {
-      p_delivery_code: delivery_code,
-      p_lead_identifier: lead_identifier,
-      p_status: status
-    })
+    // Primeiro, verificar se o delivery_code existe na tabela message_history
+    console.log('🔍 Verificando se delivery_code existe:', delivery_code);
+    
+    const { data: messageHistory, error: historyError } = await supabaseClient
+      .from('message_history')
+      .select('id, delivery_code, type, content')
+      .eq('delivery_code', delivery_code)
+      .single();
 
-    if (error) {
-      console.error('❌ Erro na função do banco:', error);
+    if (historyError || !messageHistory) {
+      console.log('❌ Delivery code não encontrado:', { delivery_code, error: historyError });
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Database error: ' + error.message,
+          error: 'Invalid delivery code - not found in message history',
+          delivery_code: delivery_code,
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400, 
+          headers: corsHeaders
+        }
+      );
+    }
+
+    console.log('✅ Delivery code encontrado:', messageHistory);
+
+    // Buscar o lead pelo identificador
+    const { data: lead, error: leadError } = await supabaseClient
+      .from('leads')
+      .select('id, name, email, whatsapp')
+      .or(`email.eq.${lead_identifier},whatsapp.eq.${lead_identifier}`)
+      .single();
+
+    if (leadError || !lead) {
+      console.log('❌ Lead não encontrado:', { lead_identifier, error: leadError });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Lead not found with provided identifier',
+          lead_identifier: lead_identifier,
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400, 
+          headers: corsHeaders
+        }
+      );
+    }
+
+    console.log('✅ Lead encontrado:', lead);
+
+    // Atualizar o status de entrega na tabela message_recipients
+    const { data: updateResult, error: updateError } = await supabaseClient
+      .from('message_recipients')
+      .update({
+        delivery_status: status,
+        delivered_at: status === 'delivered' ? new Date().toISOString() : null,
+        error_message: status === 'failed' ? 'Delivery failed via webhook' : null
+      })
+      .eq('message_history_id', messageHistory.id)
+      .eq('lead_id', lead.id)
+      .select();
+
+    if (updateError) {
+      console.error('❌ Erro ao atualizar message_recipients:', updateError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to update delivery status: ' + updateError.message,
           delivery_code: delivery_code,
           lead_identifier: lead_identifier,
           timestamp: new Date().toISOString()
@@ -124,16 +181,20 @@ serve(async (req) => {
       );
     }
 
-    console.log('✅ Webhook processado com sucesso:', data);
+    console.log('✅ Status de entrega atualizado:', updateResult);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Webhook processado com sucesso',
-        data: data,
-        delivery_code: delivery_code,
-        lead_identifier: lead_identifier,
-        status: status,
+        message: 'Delivery status updated successfully',
+        data: {
+          delivery_code: delivery_code,
+          lead_identifier: lead_identifier,
+          lead_name: lead.name,
+          status: status,
+          message_type: messageHistory.type,
+          updated_recipients: updateResult?.length || 0
+        },
         processed_at: new Date().toISOString()
       }),
       { 
