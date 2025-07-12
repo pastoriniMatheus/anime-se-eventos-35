@@ -126,6 +126,56 @@ export const useLeadStatuses = () => {
   });
 };
 
+export const useCreateLeadStatus = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (statusData: { name: string; color: string }) => {
+      const { data, error } = await supabase
+        .from('lead_statuses')
+        .insert(statusData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lead_statuses'] });
+      toast({
+        title: "Status criado",
+        description: "O status foi criado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar status",
+        variant: "destructive",
+      });
+    }
+  });
+};
+
+export const useCheckExistingLead = () => {
+  return useMutation({
+    mutationFn: async ({ name, whatsapp, email }: { name: string; whatsapp: string; email: string }) => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or(`name.eq.${name},whatsapp.eq.${whatsapp},email.eq.${email}`)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return data;
+    },
+  });
+};
+
 export const useCreateLead = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
