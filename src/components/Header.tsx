@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Users, MessageSquare, Settings, QrCode, LogOut, Menu } from 'lucide-react';
@@ -57,7 +58,7 @@ const Header = () => {
     {
       title: 'QR Code',
       icon: QrCode,
-      path: '/qr-codes',
+      path: '/qr-code',
     },
     {
       title: 'Configurações',
