@@ -89,8 +89,8 @@ serve(async (req) => {
     }
 
     // Gerar código único de entrega
-    const deliveryCode = webhook_data.delivery_code || `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    console.log('🆔 Código de entrega:', deliveryCode);
+    const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    console.log('🆔 Código de entrega gerado:', deliveryCode);
 
     // Buscar leads baseado nos filtros
     let query = supabaseClient
@@ -108,9 +108,8 @@ serve(async (req) => {
         lead_statuses(name, color)
       `);
 
-    // Aplicar filtros se especificados
-    if (webhook_data.filter_type && webhook_data.filter_value && webhook_data.filter_type !== 'all') {
-      console.log('🔍 Aplicando filtro:', webhook_data.filter_type, '=', webhook_data.filter_value);
+    // Aplicar filtros
+    if (webhook_data.filter_type && webhook_data.filter_value) {
       switch (webhook_data.filter_type) {
         case 'course':
           query = query.eq('course_id', webhook_data.filter_value);
@@ -138,7 +137,6 @@ serve(async (req) => {
     }
 
     let leadsToSend = allLeads || [];
-    console.log(`📊 Total de leads encontrados: ${leadsToSend.length}`);
 
     // Filtrar apenas leads que nunca receberam mensagem se solicitado
     if (webhook_data.send_only_to_new) {
@@ -151,17 +149,17 @@ serve(async (req) => {
       } else {
         const excludeIds = recipientLeadIds?.map(r => r.lead_id) || [];
         leadsToSend = leadsToSend.filter(lead => !excludeIds.includes(lead.id));
-        console.log(`📤 Leads após filtro (apenas novos): ${leadsToSend.length}`);
       }
     }
 
+    console.log(`📊 Total de leads encontrados: ${allLeads?.length || 0}`);
+    console.log(`📤 Leads a serem enviados: ${leadsToSend.length}`);
+
     if (leadsToSend.length === 0) {
-      console.log('⚠️ Nenhum lead encontrado com os critérios especificados');
       return new Response(JSON.stringify({
-        success: true,
+        success: false,
         message: 'Nenhum lead encontrado com os critérios especificados',
-        total_leads: 0,
-        delivery_code: deliveryCode
+        total_leads: 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -194,8 +192,6 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ Histórico de mensagem criado:', messageHistory.id);
-
     // Criar registros de destinatários
     const recipients = leadsToSend.map(lead => ({
       message_history_id: messageHistory.id,
@@ -210,8 +206,6 @@ serve(async (req) => {
     if (recipientsError) {
       console.error('❌ Erro ao criar recipients:', recipientsError);
       // Continuar mesmo com erro nos recipients
-    } else {
-      console.log('✅ Recipients criados:', recipients.length);
     }
 
     // Preparar dados para envio ao webhook
@@ -240,6 +234,7 @@ serve(async (req) => {
 
     console.log('🚀 ENVIANDO POST PARA URL:', webhook_url);
     console.log('📦 Total de leads no payload:', dataToSend.leads.length);
+    console.log('📦 Primeiros 3 leads:', dataToSend.leads.slice(0, 3));
 
     // Enviar webhook com timeout e headers específicos
     const controller = new AbortController();
@@ -298,9 +293,26 @@ serve(async (req) => {
           url: webhook_url
         });
         
+        let errorMessage = `Webhook retornou status ${response.status}`;
+        let errorDetails = responseText;
+        
+        if (response.status === 404) {
+          errorMessage = 'Webhook não encontrado (404)';
+          errorDetails = 'Verifique se a URL está correta: ' + webhook_url;
+        } else if (response.status === 405) {
+          errorMessage = 'Método não permitido (405)';
+          errorDetails = 'O webhook não aceita POST. URL: ' + webhook_url;
+        } else if (response.status === 400) {
+          errorMessage = 'Dados inválidos (400)';
+          errorDetails = 'O webhook rejeitou os dados enviados: ' + responseText;
+        } else if (response.status === 500) {
+          errorMessage = 'Erro interno do servidor (500)';
+          errorDetails = 'Problema no n8n: ' + responseText;
+        }
+        
         return new Response(JSON.stringify({
-          error: `Webhook retornou status ${response.status}`,
-          details: responseText,
+          error: errorMessage,
+          details: errorDetails,
           webhook_response: responseText,
           status_code: response.status,
           webhook_url: webhook_url,
@@ -352,9 +364,25 @@ serve(async (req) => {
         })
         .eq('id', messageHistory.id);
       
+      let errorMessage = 'Erro ao conectar com o webhook';
+      let errorDetails: any = {};
+      
+      if (fetchError.name === 'AbortError') {
+        errorMessage = 'Timeout: Webhook demorou mais de 30 segundos';
+        errorDetails = { timeout: true, duration: '30s' };
+      } else if (fetchError.message?.includes('fetch')) {
+        errorMessage = 'Não foi possível conectar ao webhook';
+        errorDetails = { connection_error: true, url: webhook_url };
+      } else {
+        errorDetails = { 
+          error_type: fetchError.name || 'UnknownError',
+          original_message: fetchError.message
+        };
+      }
+      
       return new Response(JSON.stringify({
-        error: 'Erro ao conectar com o webhook',
-        details: fetchError.message,
+        error: errorMessage,
+        details: errorDetails,
         webhook_url: webhook_url,
         message_id: messageHistory.id,
         delivery_code: deliveryCode
