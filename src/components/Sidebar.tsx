@@ -15,7 +15,8 @@ import {
 import { useSidebar } from '@/components/ui/sidebar';
 
 const Sidebar = () => {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
