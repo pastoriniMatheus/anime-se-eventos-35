@@ -148,11 +148,11 @@ serve(async (req) => {
             found: !!conversionStatusSetting,
             conversion_status_id: conversionStatusSetting?.value,
             new_status_id: status.id,
-            is_conversion: conversionStatusSetting?.value === status.id,
+            is_conversion: conversionStatusSetting?.value === status.id.toString(),
             error: conversionStatusError?.message
           });
 
-          if (conversionStatusSetting?.value === status.id) {
+          if (conversionStatusSetting?.value === status.id.toString()) {
             console.log('🎉 LEAD CONVERTIDO - Iniciando envio automático');
 
             // 3. BUSCAR WEBHOOK URL
@@ -220,14 +220,14 @@ serve(async (req) => {
                         content: conversionTemplate.content,
                         delivery_code: deliveryCode,
                         filter_type: 'automatic_conversion',
-                        filter_value: lead_id,
+                        filter_value: lead_id.toString(),
                         recipients_count: 1,
                         status: 'sending'
                       })
                       .select()
                       .single();
 
-                    console.log('📋 HISTÓRICO DE MENSAGEM:', {
+                    console.log('📋 HISTÓRICO DE MENSAGEM CRIADO:', {
                       created: !!messageHistory,
                       message_id: messageHistory?.id,
                       error: historyError?.message
@@ -255,7 +255,7 @@ serve(async (req) => {
                         type: "whatsapp",
                         content: conversionTemplate.content,
                         filter_type: "automatic_conversion",
-                        filter_value: lead_id,
+                        filter_value: lead_id.toString(),
                         send_only_to_new: false,
                         total_recipients: 1,
                         leads: [{
@@ -269,7 +269,7 @@ serve(async (req) => {
                           status_color: updatedLead.status?.color || null
                         }],
                         timestamp: new Date().toISOString(),
-                        callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/message-delivery-webhook-endpoint`,
+                        callback_url: `https://iznfrkdsmbtynmifqcdd.supabase.co/functions/v1/message-delivery-webhook-endpoint`,
                         message_id: messageHistory.id,
                         delivery_code: deliveryCode
                       };
@@ -278,7 +278,7 @@ serve(async (req) => {
                         lead_name: webhookPayload.leads[0].name,
                         delivery_code: deliveryCode,
                         webhook_url: whatsappWebhookUrl,
-                        payload: JSON.stringify(webhookPayload, null, 2)
+                        payload_size: JSON.stringify(webhookPayload).length
                       });
 
                       // 10. ENVIAR WEBHOOK
@@ -291,7 +291,7 @@ serve(async (req) => {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'User-Agent': 'Supabase-Conversion-Message/1.0',
-                            'X-Lead-ID': lead_id,
+                            'X-Lead-ID': lead_id.toString(),
                             'X-Delivery-Code': deliveryCode
                           },
                           body: JSON.stringify(webhookPayload)
@@ -301,29 +301,40 @@ serve(async (req) => {
                         console.log('📨 RESPOSTA DO WEBHOOK DE CONVERSÃO:', {
                           status: webhookResponse.status,
                           ok: webhookResponse.ok,
-                          response_body: responseText,
+                          response_body: responseText.substring(0, 500),
                           url: whatsappWebhookUrl
                         });
 
                         // 11. ATUALIZAR STATUS
                         const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
-                        await supabase
+                        
+                        const { error: updateHistoryError } = await supabase
                           .from('message_history')
                           .update({ 
                             status: finalStatus,
-                            webhook_response: `${webhookResponse.status}: ${responseText}` 
+                            webhook_response: `${webhookResponse.status}: ${responseText}`.substring(0, 1000)
                           })
                           .eq('id', messageHistory.id);
 
-                        await supabase
+                        console.log('📝 HISTÓRICO ATUALIZADO:', {
+                          status: finalStatus,
+                          error: updateHistoryError?.message
+                        });
+
+                        const { error: updateRecipientError } = await supabase
                           .from('message_recipients')
                           .update({ 
                             delivery_status: webhookResponse.ok ? 'sent' : 'failed',
                             sent_at: webhookResponse.ok ? new Date().toISOString() : null,
-                            error_message: webhookResponse.ok ? null : `${webhookResponse.status}: ${responseText}`
+                            error_message: webhookResponse.ok ? null : `${webhookResponse.status}: ${responseText}`.substring(0, 500)
                           })
                           .eq('message_history_id', messageHistory.id)
                           .eq('lead_id', lead_id);
+
+                        console.log('👤 RECIPIENT ATUALIZADO:', {
+                          status: webhookResponse.ok ? 'sent' : 'failed',
+                          error: updateRecipientError?.message
+                        });
 
                         if (webhookResponse.ok) {
                           console.log('🎉 WEBHOOK DE CONVERSÃO ENVIADO COM SUCESSO!');
@@ -351,6 +362,8 @@ serve(async (req) => {
                           .eq('message_history_id', messageHistory.id)
                           .eq('lead_id', lead_id);
                       }
+                    } else {
+                      console.log('❌ FALHA AO CRIAR HISTÓRICO DE MENSAGEM:', historyError);
                     }
                   }
                 }

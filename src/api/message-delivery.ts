@@ -62,8 +62,8 @@ export const confirmDeliveryCallback = async (deliveryCode: string, leadIdentifi
   }
 };
 
-// Função para obter a URL do webhook de entrega (nova Edge Function)
+// Função para obter a URL do webhook de entrega (usando URL pública direta)
 export const getDeliveryWebhookUrl = () => {
-  // URL da Edge Function do Supabase
+  // URL da Edge Function do Supabase - usando URL direta não restrita
   return 'https://iznfrkdsmbtynmifqcdd.supabase.co/functions/v1/message-delivery-webhook-endpoint';
 };
