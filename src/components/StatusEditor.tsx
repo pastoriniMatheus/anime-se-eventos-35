@@ -20,21 +20,63 @@ const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
 
   const handleStatusChange = async (newStatusId: string) => {
     try {
-      const { error } = await supabase
+      console.log('🔄 Iniciando mudança de status do lead:', leadId);
+      console.log('📊 Status anterior:', currentStatus?.name);
+      
+      // Buscar o novo status para obter o nome
+      const newStatus = leadStatuses.find(status => status.id === newStatusId);
+      console.log('📊 Novo status:', newStatus?.name);
+
+      // Atualizar o status do lead primeiro
+      const { error: updateError } = await supabase
         .from('leads')
         .update({ status_id: newStatusId })
         .eq('id', leadId);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('❌ Erro ao atualizar lead:', updateError);
+        throw updateError;
+      }
 
+      console.log('✅ Status do lead atualizado no banco');
+
+      // Chamar a função lead-status-callback
+      console.log('🚀 Chamando função lead-status-callback...');
+      
+      const callbackData = {
+        lead_id: leadId,
+        status_name: newStatus?.name || 'Unknown',
+        notes: `Status alterado via interface de ${currentStatus?.name || 'status anterior'} para ${newStatus?.name || 'novo status'}`
+      };
+
+      console.log('📦 Dados para callback:', callbackData);
+
+      const { data: callbackResponse, error: callbackError } = await supabase.functions.invoke('lead-status-callback', {
+        body: callbackData
+      });
+
+      if (callbackError) {
+        console.error('❌ Erro na função callback:', callbackError);
+        // Não falhar a operação por causa do callback
+        toast({
+          title: "Status atualizado",
+          description: "Status atualizado, mas houve erro no processamento automático",
+          variant: "destructive",
+        });
+      } else {
+        console.log('✅ Callback executado com sucesso:', callbackResponse);
+        toast({
+          title: "Status atualizado",
+          description: "Status do lead atualizado com sucesso!",
+        });
+      }
+
+      // Invalidar queries para atualizar a UI
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       setIsEditing(false);
 
-      toast({
-        title: "Status atualizado",
-        description: "Status do lead atualizado com sucesso!",
-      });
     } catch (error: any) {
+      console.error('💥 Erro geral:', error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao atualizar status",
