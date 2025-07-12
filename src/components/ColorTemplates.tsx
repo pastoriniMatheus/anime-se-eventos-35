@@ -44,7 +44,7 @@ const colorTemplates: ColorTemplate[] = [
       primaryColor: '#ec4899',
       secondaryColor: '#be185d',
       accentColor: '#f472b6',
-      successColor: '#22c55e',
+      successColor: '#10b981',
       warningColor: '#f59e0b',
       dangerColor: '#ef4444',
       backgroundColor: '#ffffff',
@@ -71,7 +71,7 @@ const colorTemplates: ColorTemplate[] = [
       primaryColor: '#3b82f6',
       secondaryColor: '#1e40af',
       accentColor: '#0ea5e9',
-      successColor: '#22c55e',
+      successColor: '#10b981',
       warningColor: '#f59e0b',
       dangerColor: '#ef4444',
       backgroundColor: '#ffffff',
@@ -91,41 +91,41 @@ const colorTemplates: ColorTemplate[] = [
   },
   {
     id: 'clean-minimal',
-    name: 'Clean Minimal',
-    description: 'Design limpo e minimalista com tons neutros suaves',
-    preview: ['#6b7280', '#374151', '#f9fafb', '#10b981'],
+    name: 'Clean & Minimal',
+    description: 'Design limpo e minimalista com tons neutros e contrastes perfeitos',
+    preview: ['#334155', '#64748b', '#f8fafc', '#10b981'],
     colors: {
-      primaryColor: '#6b7280',
-      secondaryColor: '#374151',
+      primaryColor: '#334155',
+      secondaryColor: '#64748b',
       accentColor: '#10b981',
-      successColor: '#22c55e',
-      warningColor: '#f59e0b',
-      dangerColor: '#ef4444',
+      successColor: '#059669',
+      warningColor: '#d97706',
+      dangerColor: '#dc2626',
       backgroundColor: '#ffffff',
-      surfaceColor: '#fefefe',
-      borderColor: '#e5e7eb',
-      textPrimary: '#111827',
-      textSecondary: '#374151',
-      textMuted: '#6b7280',
-      menuBackground: '#f9fafb',
-      menuActive: '#6b7280',
-      menuHover: '#f3f4f6',
-      gradientStart: '#6b7280',
-      gradientEnd: '#374151',
+      surfaceColor: '#f9fafb',
+      borderColor: '#e2e8f0',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      textMuted: '#94a3b8',
+      menuBackground: '#f1f5f9',
+      menuActive: '#334155',
+      menuHover: '#e2e8f0',
+      gradientStart: '#334155',
+      gradientEnd: '#64748b',
       gradientSecondStart: '#10b981',
       gradientSecondEnd: '#059669',
     }
   },
   {
     id: 'sophisticated-purple',
-    name: 'Sofisticado Roxo',
-    description: 'Elegante e sofisticado com tons profundos de roxo',
-    preview: ['#8b5cf6', '#5b21b6', '#faf5ff', '#a855f7'],
+    name: 'Roxo Sofisticado',
+    description: 'Elegante e profissional com tons harmoniosos de roxo e violeta',
+    preview: ['#7c3aed', '#5b21b6', '#faf5ff', '#a855f7'],
     colors: {
-      primaryColor: '#8b5cf6',
+      primaryColor: '#7c3aed',
       secondaryColor: '#5b21b6',
       accentColor: '#a855f7',
-      successColor: '#22c55e',
+      successColor: '#10b981',
       warningColor: '#f59e0b',
       dangerColor: '#ef4444',
       backgroundColor: '#ffffff',
@@ -135,24 +135,24 @@ const colorTemplates: ColorTemplate[] = [
       textSecondary: '#4b5563',
       textMuted: '#6b7280',
       menuBackground: '#faf5ff',
-      menuActive: '#8b5cf6',
+      menuActive: '#7c3aed',
       menuHover: '#ddd6fe',
-      gradientStart: '#8b5cf6',
+      gradientStart: '#7c3aed',
       gradientEnd: '#5b21b6',
       gradientSecondStart: '#a855f7',
       gradientSecondEnd: '#7c3aed',
     }
   },
   {
-    id: 'dark-mode',
-    name: 'Modo Escuro Elegante',
-    description: 'Tema escuro moderno com contrastes suaves e acentos vibrantes',
+    id: 'dark-elegant',
+    name: 'Dark Elegante',
+    description: 'Tema escuro moderno com contrastes perfeitos e acentos vibrantes',
     preview: ['#6366f1', '#4f46e5', '#0f172a', '#8b5cf6'],
     colors: {
       primaryColor: '#6366f1',
       secondaryColor: '#4f46e5',
       accentColor: '#8b5cf6',
-      successColor: '#22c55e',
+      successColor: '#10b981',
       warningColor: '#f59e0b',
       dangerColor: '#ef4444',
       backgroundColor: '#0f172a',
@@ -173,15 +173,15 @@ const colorTemplates: ColorTemplate[] = [
   {
     id: 'warm-sunset',
     name: 'Pôr do Sol Caloroso',
-    description: 'Cores quentes inspiradas no pôr do sol com contrastes vibrantes',
+    description: 'Cores quentes e acolhedoras inspiradas no pôr do sol',
     preview: ['#f97316', '#ea580c', '#fff7ed', '#fb923c'],
     colors: {
       primaryColor: '#f97316',
       secondaryColor: '#ea580c',
       accentColor: '#fb923c',
-      successColor: '#22c55e',
-      warningColor: '#f59e0b',
-      dangerColor: '#ef4444',
+      successColor: '#10b981',
+      warningColor: '#d97706',
+      dangerColor: '#dc2626',
       backgroundColor: '#ffffff',
       surfaceColor: '#fefefe',
       borderColor: '#fed7aa',
@@ -200,18 +200,18 @@ const colorTemplates: ColorTemplate[] = [
   {
     id: 'ocean-breeze',
     name: 'Brisa do Oceano',
-    description: 'Tons de azul e verde inspirados no oceano',
+    description: 'Tons frescos de azul e turquesa inspirados no oceano',
     preview: ['#0891b2', '#155e75', '#ecfeff', '#06b6d4'],
     colors: {
       primaryColor: '#0891b2',
       secondaryColor: '#155e75',
       accentColor: '#06b6d4',
-      successColor: '#22c55e',
+      successColor: '#10b981',
       warningColor: '#f59e0b',
       dangerColor: '#ef4444',
       backgroundColor: '#ffffff',
       surfaceColor: '#fefefe',
-      borderColor: '#a7f3d0',
+      borderColor: '#cffafe',
       textPrimary: '#1f2937',
       textSecondary: '#374151',
       textMuted: '#6b7280',
@@ -227,15 +227,15 @@ const colorTemplates: ColorTemplate[] = [
   {
     id: 'forest-green',
     name: 'Verde Floresta',
-    description: 'Tons naturais de verde com toques terrosos',
+    description: 'Tons naturais e harmoniosos de verde com acentos terrosos',
     preview: ['#16a34a', '#15803d', '#f0fdf4', '#22c55e'],
     colors: {
       primaryColor: '#16a34a',
       secondaryColor: '#15803d',
       accentColor: '#22c55e',
-      successColor: '#22c55e',
-      warningColor: '#f59e0b',
-      dangerColor: '#ef4444',
+      successColor: '#059669',
+      warningColor: '#d97706',
+      dangerColor: '#dc2626',
       backgroundColor: '#ffffff',
       surfaceColor: '#fefefe',
       borderColor: '#bbf7d0',
@@ -249,6 +249,33 @@ const colorTemplates: ColorTemplate[] = [
       gradientEnd: '#15803d',
       gradientSecondStart: '#22c55e',
       gradientSecondEnd: '#059669',
+    }
+  },
+  {
+    id: 'rose-gold',
+    name: 'Rose Gold Premium',
+    description: 'Tons elegantes de rose gold com acentos dourados',
+    preview: ['#e11d48', '#be123c', '#fff1f2', '#f43f5e'],
+    colors: {
+      primaryColor: '#e11d48',
+      secondaryColor: '#be123c',
+      accentColor: '#f43f5e',
+      successColor: '#10b981',
+      warningColor: '#f59e0b',
+      dangerColor: '#dc2626',
+      backgroundColor: '#ffffff',
+      surfaceColor: '#fefefe',
+      borderColor: '#fce7e7',
+      textPrimary: '#1f2937',
+      textSecondary: '#4b5563',
+      textMuted: '#6b7280',
+      menuBackground: '#fff1f2',
+      menuActive: '#e11d48',
+      menuHover: '#fce7e7',
+      gradientStart: '#e11d48',
+      gradientEnd: '#be123c',
+      gradientSecondStart: '#f43f5e',
+      gradientSecondEnd: '#e11d48',
     }
   }
 ];
@@ -299,15 +326,20 @@ const ColorTemplates = ({ onTemplateApply }: ColorTemplatesProps) => {
       }
 
       toast({
-        title: "Template aplicado",
-        description: `O tema "${template.name}" foi aplicado com sucesso!`,
+        title: "Template aplicado com sucesso!",
+        description: `O tema "${template.name}" foi aplicado. A página será recarregada para aplicar as mudanças.`,
       });
+
+      // Recarregar a página após 1 segundo para aplicar as cores
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
 
       onTemplateApply?.();
     } catch (error) {
       toast({
         title: "Erro ao aplicar template",
-        description: "Erro ao aplicar o tema selecionado",
+        description: "Ocorreu um erro ao aplicar o tema selecionado",
         variant: "destructive",
       });
     }
@@ -318,21 +350,21 @@ const ColorTemplates = ({ onTemplateApply }: ColorTemplatesProps) => {
       <div className="space-y-2">
         <h3 className="text-lg font-semibold flex items-center space-x-2">
           <Palette className="h-5 w-5" />
-          <span>Templates de Cores</span>
+          <span>Templates de Cores Profissionais</span>
         </h3>
         <p className="text-sm text-muted-foreground">
-          Escolha um tema predefinido para aplicar rapidamente um conjunto de cores harmonioso
+          Escolha um tema predefinido com cores harmoniosas e contrastes perfeitos
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {colorTemplates.map((template) => (
-          <Card key={template.id} className="overflow-hidden">
+          <Card key={template.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">{template.name}</CardTitle>
-                  <CardDescription className="text-xs mt-1">
+                <div className="flex-1">
+                  <CardTitle className="text-sm font-semibold">{template.name}</CardTitle>
+                  <CardDescription className="text-xs mt-1 leading-tight">
                     {template.description}
                   </CardDescription>
                 </div>
@@ -340,7 +372,7 @@ const ColorTemplates = ({ onTemplateApply }: ColorTemplatesProps) => {
                   variant="outline"
                   size="sm"
                   onClick={() => applyTemplate(template)}
-                  className="ml-2"
+                  className="ml-2 shrink-0"
                 >
                   <Check className="h-3 w-3 mr-1" />
                   Aplicar
@@ -349,20 +381,22 @@ const ColorTemplates = ({ onTemplateApply }: ColorTemplatesProps) => {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-1 h-12">
+                {/* Preview das cores principais */}
+                <div className="grid grid-cols-4 gap-1 h-8">
                   {template.preview.map((color, index) => (
                     <div
                       key={index}
-                      className="rounded"
+                      className="rounded border"
                       style={{ backgroundColor: color }}
                       title={color}
                     />
                   ))}
                 </div>
                 
-                <div className="space-y-2">
+                {/* Preview dos gradientes */}
+                <div className="space-y-1">
                   <div 
-                    className="h-8 rounded flex items-center justify-center text-white text-xs font-medium"
+                    className="h-6 rounded text-white text-xs font-medium flex items-center justify-center"
                     style={{ 
                       background: `linear-gradient(135deg, ${template.colors.gradientStart}, ${template.colors.gradientEnd})` 
                     }}
@@ -370,12 +404,33 @@ const ColorTemplates = ({ onTemplateApply }: ColorTemplatesProps) => {
                     Gradiente Principal
                   </div>
                   <div 
-                    className="h-8 rounded flex items-center justify-center text-white text-xs font-medium"
+                    className="h-6 rounded text-white text-xs font-medium flex items-center justify-center"
                     style={{ 
                       background: `linear-gradient(135deg, ${template.colors.gradientSecondStart}, ${template.colors.gradientSecondEnd})` 
                     }}
                   >
                     Gradiente Secundário
+                  </div>
+                </div>
+
+                {/* Preview do menu */}
+                <div 
+                  className="p-2 rounded text-xs"
+                  style={{ backgroundColor: template.colors.menuBackground, color: template.colors.textPrimary }}
+                >
+                  <div className="flex space-x-1">
+                    <span 
+                      className="px-2 py-1 rounded text-white"
+                      style={{ backgroundColor: template.colors.menuActive }}
+                    >
+                      Ativo
+                    </span>
+                    <span 
+                      className="px-2 py-1 rounded"
+                      style={{ backgroundColor: template.colors.menuHover, color: template.colors.textPrimary }}
+                    >
+                      Hover
+                    </span>
                   </div>
                 </div>
               </div>

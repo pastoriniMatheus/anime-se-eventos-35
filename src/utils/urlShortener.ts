@@ -55,7 +55,7 @@ export const buildQRRedirectUrl = (shortUrl: string): string => {
   return `${supabaseUrl}/functions/v1/qr-redirect/${shortUrl}`;
 };
 
-// Função para construir URL do formulário com domínio atual
+// Função para construir URL do formulário com domínio atual - SEMPRE /form
 export const buildFormUrl = (eventName: string, trackingId: string): string => {
   const currentDomain = getCurrentDomain();
   
