@@ -89,71 +89,120 @@ serve(async (req) => {
     }
 
     // Gerar código único de entrega
-    const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const deliveryCode = webhook_data.delivery_code || `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     console.log('🆔 Código de entrega gerado:', deliveryCode);
 
-    // Buscar leads baseado nos filtros
-    let query = supabaseClient
-      .from('leads')
-      .select(`
-        id,
-        name,
-        email,
-        whatsapp,
-        course_id,
-        event_id,
-        status_id,
-        courses(name),
-        events(name),
-        lead_statuses(name, color)
-      `);
+    let leadsToSend = [];
 
-    // Aplicar filtros
-    if (webhook_data.filter_type && webhook_data.filter_value) {
-      switch (webhook_data.filter_type) {
-        case 'course':
-          query = query.eq('course_id', webhook_data.filter_value);
-          break;
-        case 'event':
-          query = query.eq('event_id', webhook_data.filter_value);
-          break;
-        case 'status':
-          query = query.eq('status_id', webhook_data.filter_value);
-          break;
-      }
-    }
-
-    const { data: allLeads, error: leadsError } = await query;
-
-    if (leadsError) {
-      console.error('❌ Erro ao buscar leads:', leadsError);
-      return new Response(JSON.stringify({
-        error: 'Database error while fetching leads',
-        details: leadsError.message
-      }), { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    let leadsToSend = allLeads || [];
-
-    // Filtrar apenas leads que nunca receberam mensagem se solicitado
-    if (webhook_data.send_only_to_new) {
-      const { data: recipientLeadIds, error: recipientsError } = await supabaseClient
-        .from('message_recipients')
-        .select('lead_id');
+    // Verificar se é conversão automática (filtro específico para um lead)
+    if (webhook_data.filter_type === 'automatic_conversion') {
+      console.log('🎯 PROCESSANDO CONVERSÃO AUTOMÁTICA para lead:', webhook_data.filter_value);
       
-      if (recipientsError) {
-        console.error('❌ Erro ao buscar recipients:', recipientsError);
-      } else {
-        const excludeIds = recipientLeadIds?.map(r => r.lead_id) || [];
-        leadsToSend = leadsToSend.filter(lead => !excludeIds.includes(lead.id));
+      // Buscar lead específico
+      const { data: singleLead, error: leadError } = await supabaseClient
+        .from('leads')
+        .select(`
+          id,
+          name,
+          email,
+          whatsapp,
+          course_id,
+          event_id,
+          status_id,
+          courses(name),
+          events(name),
+          lead_statuses(name, color)
+        `)
+        .eq('id', webhook_data.filter_value)
+        .single();
+
+      if (leadError) {
+        console.error('❌ Erro ao buscar lead para conversão:', leadError);
+        return new Response(JSON.stringify({
+          error: 'Lead not found for conversion',
+          details: leadError.message
+        }), { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!singleLead.whatsapp) {
+        console.log('❌ Lead não possui WhatsApp para conversão');
+        return new Response(JSON.stringify({
+          error: 'Lead has no WhatsApp number',
+          details: 'Cannot send conversion message to lead without WhatsApp'
+        }), { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      leadsToSend = [singleLead];
+      console.log('✅ Lead encontrado para conversão:', singleLead.name);
+    } else {
+      // Buscar leads baseado nos filtros normais
+      let query = supabaseClient
+        .from('leads')
+        .select(`
+          id,
+          name,
+          email,
+          whatsapp,
+          course_id,
+          event_id,
+          status_id,
+          courses(name),
+          events(name),
+          lead_statuses(name, color)
+        `);
+
+      // Aplicar filtros
+      if (webhook_data.filter_type && webhook_data.filter_value) {
+        switch (webhook_data.filter_type) {
+          case 'course':
+            query = query.eq('course_id', webhook_data.filter_value);
+            break;
+          case 'event':
+            query = query.eq('event_id', webhook_data.filter_value);
+            break;
+          case 'status':
+            query = query.eq('status_id', webhook_data.filter_value);
+            break;
+        }
+      }
+
+      const { data: allLeads, error: leadsError } = await query;
+
+      if (leadsError) {
+        console.error('❌ Erro ao buscar leads:', leadsError);
+        return new Response(JSON.stringify({
+          error: 'Database error while fetching leads',
+          details: leadsError.message
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      leadsToSend = allLeads || [];
+
+      // Filtrar apenas leads que nunca receberam mensagem se solicitado
+      if (webhook_data.send_only_to_new) {
+        const { data: recipientLeadIds, error: recipientsError } = await supabaseClient
+          .from('message_recipients')
+          .select('lead_id');
+        
+        if (recipientsError) {
+          console.error('❌ Erro ao buscar recipients:', recipientsError);
+        } else {
+          const excludeIds = recipientLeadIds?.map(r => r.lead_id) || [];
+          leadsToSend = leadsToSend.filter(lead => !excludeIds.includes(lead.id));
+        }
       }
     }
 
-    console.log(`📊 Total de leads encontrados: ${allLeads?.length || 0}`);
-    console.log(`📤 Leads a serem enviados: ${leadsToSend.length}`);
+    console.log(`📊 Total de leads encontrados: ${leadsToSend.length}`);
 
     if (leadsToSend.length === 0) {
       return new Response(JSON.stringify({
