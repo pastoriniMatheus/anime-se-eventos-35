@@ -136,6 +136,7 @@ serve(async (req) => {
     // Enviar para webhook externo
     try {
       console.log('📤 Enviando para webhook externo...');
+      console.log('🌐 URL completa do webhook:', validationWebhook);
       
       const webhookPayload = {
         whatsapp,
@@ -144,16 +145,19 @@ serve(async (req) => {
       };
 
       console.log('📋 Payload do webhook:', JSON.stringify(webhookPayload, null, 2));
-      console.log('🌐 URL do callback configurada:', webhookPayload.callback_url);
+      console.log('🔗 URL do callback configurada:', webhookPayload.callback_url);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+      console.log('🚀 Fazendo requisição POST para:', validationWebhook);
+      
       const webhookResponse = await fetch(validationWebhook, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'User-Agent': 'Supabase-Functions/1.0'
         },
         body: JSON.stringify(webhookPayload),
         signal: controller.signal,
@@ -165,23 +169,44 @@ serve(async (req) => {
       console.log('📥 Resposta do webhook:', {
         status: webhookResponse.status,
         statusText: webhookResponse.statusText,
+        headers: Object.fromEntries(webhookResponse.headers.entries()),
         body: responseText
       });
 
       if (!webhookResponse.ok) {
         console.error('❌ Webhook retornou erro:', webhookResponse.status, responseText);
         
+        // Detalhes específicos do erro N8N
+        let errorDetails = `Webhook error ${webhookResponse.status}: ${responseText}`;
+        if (webhookResponse.status === 404) {
+          errorDetails += '\n\n🔧 POSSÍVEIS SOLUÇÕES:\n' +
+            '1. Verifique se o workflow no N8N está ATIVO (toggle no canto superior direito)\n' +
+            '2. Confirme se a URL do webhook está correta\n' +
+            '3. Verifique se o webhook está configurado para aceitar requisições POST\n' +
+            '4. Teste a URL diretamente no N8N';
+        }
+        
         // Atualizar status para erro
         await supabase
           .from('whatsapp_validations')
           .update({ 
             status: 'error',
-            response_message: `Webhook error ${webhookResponse.status}: ${responseText}`,
+            response_message: errorDetails,
             validated_at: new Date().toISOString()
           })
           .eq('id', validation_id);
 
-        throw new Error(`Webhook returned ${webhookResponse.status}: ${responseText}`);
+        return new Response(JSON.stringify({
+          error: 'Webhook error',
+          details: errorDetails,
+          validation_id,
+          webhook_url: validationWebhook,
+          webhook_status: webhookResponse.status,
+          webhook_response: responseText
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       console.log('✅ Webhook chamado com sucesso');
@@ -218,10 +243,11 @@ serve(async (req) => {
 
       // Retornar erro mais específico
       return new Response(JSON.stringify({
-        error: 'Webhook error',
+        error: 'Webhook connection error',
         details: errorMessage,
         validation_id,
-        webhook_url: validationWebhook
+        webhook_url: validationWebhook,
+        troubleshooting: 'Verifique se a URL do webhook está acessível e se o serviço N8N está funcionando corretamente'
       }), { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
