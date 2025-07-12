@@ -16,7 +16,7 @@ export const useMessageSender = (systemSettings: any[]) => {
       filterValue?: string;
       sendOnlyToNew: boolean;
     }) => {
-      console.log('Enviando mensagem com parâmetros:', data);
+      console.log('🚀 Enviando mensagem com parâmetros:', data);
       
       const webhookSettings = systemSettings.find(s => s.key === 'webhook_urls');
       let webhookUrl = '';
@@ -25,8 +25,9 @@ export const useMessageSender = (systemSettings: any[]) => {
         try {
           const urls = JSON.parse(webhookSettings.value);
           webhookUrl = urls.whatsapp || '';
+          console.log('🔗 URL do webhook encontrada:', webhookUrl);
         } catch (error) {
-          console.error('Erro ao parsear webhook URLs:', error);
+          console.error('❌ Erro ao parsear webhook URLs:', error);
         }
       }
 
@@ -34,16 +35,25 @@ export const useMessageSender = (systemSettings: any[]) => {
         throw new Error('URL do webhook WhatsApp não configurada');
       }
 
+      // Gerar código de entrega único
+      const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      console.log('🏷️ Código de entrega gerado:', deliveryCode);
+
+      // Preparar dados do webhook
       const webhookData = {
         type: 'whatsapp',
         content: data.message,
-        recipients: [],
         filter_type: data.filterType || null,
         filter_value: data.filterValue || null,
         send_only_to_new: data.sendOnlyToNew,
-        delivery_code: Math.random().toString(36).substring(2, 15)
+        delivery_code: deliveryCode,
+        callback_url: `https://iznfrkdsmbtynmifqcdd.supabase.co/functions/v1/message-delivery-webhook-endpoint`,
+        timestamp: new Date().toISOString()
       };
 
+      console.log('📦 Dados do webhook preparados:', webhookData);
+
+      // Chamar a edge function send-webhook
       const { data: response, error } = await supabase.functions.invoke('send-webhook', {
         body: {
           webhook_url: webhookUrl,
@@ -52,10 +62,11 @@ export const useMessageSender = (systemSettings: any[]) => {
       });
 
       if (error) {
-        console.error('Erro ao enviar mensagem:', error);
+        console.error('❌ Erro da edge function send-webhook:', error);
         throw error;
       }
 
+      console.log('✅ Resposta da edge function send-webhook:', response);
       return response;
     },
     onSuccess: () => {
@@ -67,7 +78,7 @@ export const useMessageSender = (systemSettings: any[]) => {
       queryClient.invalidateQueries({ queryKey: ['contacts-never-messaged'] });
     },
     onError: (error: any) => {
-      console.error('Erro completo:', error);
+      console.error('💥 Erro completo no envio de mensagem:', error);
       toast({
         title: "Erro ao enviar mensagem",
         description: error.message || "Ocorreu um erro ao enviar a mensagem",

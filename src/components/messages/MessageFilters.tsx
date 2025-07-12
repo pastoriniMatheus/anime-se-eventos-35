@@ -31,26 +31,28 @@ const MessageFilters = ({
   events
 }: MessageFiltersProps) => {
   // Buscar status diretamente do banco para garantir que estão atualizados
-  const { data: freshLeadStatuses = [] } = useQuery({
+  const { data: freshLeadStatuses = [], isLoading: statusLoading } = useQuery({
     queryKey: ['lead_statuses_for_filter'],
     queryFn: async () => {
-      console.log('🔍 Buscando status para filtro...');
+      console.log('🔍 Buscando status para filtro de mensagens...');
       const { data, error } = await supabase
         .from('lead_statuses')
-        .select('*')
+        .select('id, name, color')
         .order('name');
       
       if (error) {
-        console.error('❌ Erro ao buscar status:', error);
-        throw error;
+        console.error('❌ Erro ao buscar status para filtro:', error);
+        return [];
       }
       
       console.log('📊 Status encontrados para filtro:', data);
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnWindowFocus: false
   });
 
-  // Usar os status mais frescos ou os passados por props
+  // Usar os status mais frescos ou os passados por props como fallback
   const statusesToUse = freshLeadStatuses.length > 0 ? freshLeadStatuses : leadStatuses;
 
   console.log('🎯 Status sendo usados no filtro:', statusesToUse);
@@ -60,6 +62,7 @@ const MessageFilters = ({
       <div className="space-y-2">
         <Label htmlFor="filter-type">Filtrar por</Label>
         <Select value={filterType} onValueChange={(value) => {
+          console.log('🔄 Mudando tipo de filtro para:', value);
           onFilterTypeChange(value);
           onFilterValueChange('');
         }}>
@@ -82,7 +85,10 @@ const MessageFilters = ({
             {filterType === 'event' && 'Evento'}
             {filterType === 'status' && 'Status'}
           </Label>
-          <Select value={filterValue} onValueChange={onFilterValueChange}>
+          <Select value={filterValue} onValueChange={(value) => {
+            console.log('🔄 Mudando valor do filtro para:', value);
+            onFilterValueChange(value);
+          }}>
             <SelectTrigger>
               <SelectValue placeholder={`Selecione o ${filterType}`} />
             </SelectTrigger>
@@ -97,17 +103,23 @@ const MessageFilters = ({
                   {event.name}
                 </SelectItem>
               ))}
-              {filterType === 'status' && statusesToUse.map((status: LeadStatus) => (
-                <SelectItem key={status.id} value={status.id}>
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <span>{status.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {filterType === 'status' && (
+                statusLoading ? 
+                  <SelectItem value="loading" disabled>Carregando status...</SelectItem>
+                : statusesToUse.length === 0 ?
+                  <SelectItem value="no-status" disabled>Nenhum status encontrado</SelectItem>
+                : statusesToUse.map((status: LeadStatus) => (
+                  <SelectItem key={status.id} value={status.id}>
+                    <div className="flex items-center space-x-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: status.color }}
+                      />
+                      <span>{status.name}</span>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>

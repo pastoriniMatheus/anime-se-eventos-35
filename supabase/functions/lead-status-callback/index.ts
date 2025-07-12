@@ -28,7 +28,8 @@ serve(async (req) => {
 
     const { lead_id, status_name, notes } = await req.json();
 
-    console.log('🔄 Callback de status recebido:', { lead_id, status_name, notes });
+    console.log('🔄 === CALLBACK DE STATUS RECEBIDO ===');
+    console.log('📋 Dados recebidos:', { lead_id, status_name, notes });
 
     if (!lead_id || !status_name) {
       return new Response('Missing required fields: lead_id and status_name', { 
@@ -123,8 +124,8 @@ serve(async (req) => {
 
     console.log('✅ Lead atualizado com sucesso:', updatedLead);
 
-    // VERIFICAR ENVIO AUTOMÁTICO DE CONVERSÃO
-    console.log('🔍 === INICIANDO VERIFICAÇÃO DE CONVERSÃO ===');
+    // === VERIFICAÇÃO DE CONVERSÃO AUTOMÁTICA ===
+    console.log('🔍 === INICIANDO VERIFICAÇÃO DE CONVERSÃO AUTOMÁTICA ===');
     
     try {
       // 1. VERIFICAR SE ENVIO AUTOMÁTICO DE CONVERSÃO ESTÁ HABILITADO
@@ -142,9 +143,9 @@ serve(async (req) => {
       });
 
       if (conversionMessageSetting?.value !== 'true') {
-        console.log('🚫 ENVIO AUTOMÁTICO DE CONVERSÃO DESABILITADO');
+        console.log('🚫 ENVIO AUTOMÁTICO DE CONVERSÃO DESABILITADO - finalizando callback');
       } else {
-        console.log('✅ ENVIO AUTOMÁTICO DE CONVERSÃO HABILITADO');
+        console.log('✅ ENVIO AUTOMÁTICO DE CONVERSÃO HABILITADO - continuando verificação');
         
         // 2. VERIFICAR SE O NOVO STATUS É O STATUS DE CONVERSÃO
         const { data: conversionStatusSetting, error: conversionStatusError } = await supabase
@@ -162,7 +163,7 @@ serve(async (req) => {
         });
 
         if (conversionStatusSetting?.value === status.id.toString()) {
-          console.log('🎉 LEAD CONVERTIDO - Iniciando envio automático');
+          console.log('🎉 === LEAD CONVERTIDO - INICIANDO ENVIO AUTOMÁTICO ===');
 
           // 3. BUSCAR TEMPLATE DE CONVERSÃO
           const { data: conversionTemplate, error: templateError } = await supabase
@@ -179,13 +180,13 @@ serve(async (req) => {
           });
 
           if (!conversionTemplate) {
-            console.log('❌ NENHUM TEMPLATE DE CONVERSÃO ENCONTRADO');
+            console.log('❌ NENHUM TEMPLATE DE CONVERSÃO ENCONTRADO - abortando envio');
           } else {
             console.log('⭐ TEMPLATE DE CONVERSÃO ENCONTRADO:', conversionTemplate.name);
 
             // 4. VERIFICAR SE LEAD TEM WHATSAPP
             if (!updatedLead.whatsapp) {
-              console.log('❌ LEAD NÃO TEM WHATSAPP, PULANDO ENVIO');
+              console.log('❌ LEAD NÃO TEM WHATSAPP - abortando envio');
             } else {
               console.log('📱 LEAD TEM WHATSAPP:', updatedLead.whatsapp);
               
@@ -203,7 +204,7 @@ serve(async (req) => {
               });
 
               if (!webhookSetting?.value) {
-                console.log('❌ WEBHOOK_URLS NÃO CONFIGURADO');
+                console.log('❌ WEBHOOK_URLS NÃO CONFIGURADO - abortando envio');
               } else {
                 let whatsappWebhookUrl;
                 try {
@@ -262,8 +263,8 @@ serve(async (req) => {
                       error: recipientError?.message
                     });
 
-                    // 9. PREPARAR PAYLOAD PADRONIZADO
-                    const webhookPayload = {
+                    // 9. PREPARAR PAYLOAD DE CONVERSÃO
+                    const conversionPayload = {
                       type: "whatsapp",
                       content: conversionTemplate.content,
                       filter_type: "automatic_conversion",
@@ -286,16 +287,18 @@ serve(async (req) => {
                       delivery_code: deliveryCode
                     };
 
-                    console.log('📦 PAYLOAD DE CONVERSÃO CRIADO:', {
-                      lead_name: webhookPayload.leads[0].name,
+                    console.log('📦 PAYLOAD DE CONVERSÃO PREPARADO:', {
+                      lead_name: conversionPayload.leads[0].name,
                       delivery_code: deliveryCode,
                       webhook_url: whatsappWebhookUrl,
-                      payload_size: JSON.stringify(webhookPayload).length
+                      payload_size: JSON.stringify(conversionPayload).length
                     });
 
-                    // 10. ENVIAR WEBHOOK
+                    // 10. ENVIAR WEBHOOK DE CONVERSÃO
                     try {
-                      console.log('🚀 ENVIANDO WEBHOOK DE CONVERSÃO PARA:', whatsappWebhookUrl);
+                      console.log('🚀 === ENVIANDO WEBHOOK DE CONVERSÃO ===');
+                      console.log('🔗 URL:', whatsappWebhookUrl);
+                      console.log('📋 Payload completo:', JSON.stringify(conversionPayload, null, 2));
                       
                       const webhookResponse = await fetch(whatsappWebhookUrl, {
                         method: 'POST',
@@ -306,7 +309,7 @@ serve(async (req) => {
                           'X-Lead-ID': lead_id.toString(),
                           'X-Delivery-Code': deliveryCode
                         },
-                        body: JSON.stringify(webhookPayload)
+                        body: JSON.stringify(conversionPayload)
                       });
 
                       const responseText = await webhookResponse.text();
@@ -314,10 +317,11 @@ serve(async (req) => {
                         status: webhookResponse.status,
                         ok: webhookResponse.ok,
                         response_body: responseText.substring(0, 500),
-                        url: whatsappWebhookUrl
+                        url: whatsappWebhookUrl,
+                        headers: Object.fromEntries(webhookResponse.headers.entries())
                       });
 
-                      // 11. ATUALIZAR STATUS
+                      // 11. ATUALIZAR STATUS NO BANCO
                       const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
                       
                       const { error: updateHistoryError } = await supabase
@@ -351,9 +355,9 @@ serve(async (req) => {
                       });
 
                       if (webhookResponse.ok) {
-                        console.log('🎉 WEBHOOK DE CONVERSÃO ENVIADO COM SUCESSO!');
+                        console.log('🎉 === WEBHOOK DE CONVERSÃO ENVIADO COM SUCESSO ===');
                       } else {
-                        console.log('❌ FALHA NO WEBHOOK DE CONVERSÃO:', webhookResponse.status);
+                        console.log('❌ === FALHA NO WEBHOOK DE CONVERSÃO ===', webhookResponse.status);
                       }
                     } catch (fetchError) {
                       console.error('💥 ERRO AO FAZER FETCH DO WEBHOOK:', fetchError);
@@ -380,7 +384,7 @@ serve(async (req) => {
                     console.log('❌ FALHA AO CRIAR HISTÓRICO DE MENSAGEM:', historyError);
                   }
                 } else {
-                  console.log('❌ URL DO WEBHOOK WHATSAPP NÃO ENCONTRADA');
+                  console.log('❌ URL DO WEBHOOK WHATSAPP NÃO ENCONTRADA NAS CONFIGURAÇÕES');
                 }
               }
             }
@@ -392,6 +396,8 @@ serve(async (req) => {
     } catch (conversionError) {
       console.error('💥 ERRO NO PROCESSAMENTO DE CONVERSÃO:', conversionError);
     }
+
+    console.log('🏁 === CALLBACK DE STATUS FINALIZADO ===');
 
     return new Response(JSON.stringify({ 
       success: true, 
