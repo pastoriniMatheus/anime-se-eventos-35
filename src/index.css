@@ -50,11 +50,11 @@
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
 
-    /* Gradient variables */
-    --gradient-start: #6366f1;
-    --gradient-end: #8b5cf6;
-    --gradient-second-start: #ec4899;
-    --gradient-second-end: #f97316;
+    /* Gradient variables - definindo valores padrão */
+    --gradient-start: #ec4899;
+    --gradient-end: #be185d;
+    --gradient-second-start: #f472b6;
+    --gradient-second-end: #e11d48;
   }
 
   .dark {
@@ -95,6 +95,12 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Gradientes para tema escuro */
+    --gradient-start: #6366f1;
+    --gradient-end: #4f46e5;
+    --gradient-second-start: #8b5cf6;
+    --gradient-second-end: #7c3aed;
   }
 }
 
@@ -115,7 +121,6 @@
     transition: all 0.2s ease-in-out;
   }
 
-  .btn-private:hover,
   .btn-primary:hover {
     background-color: hsl(var(--primary-hover, var(--primary)));
     transform: translateY(-1px);
@@ -167,23 +172,29 @@
     background-color: hsl(var(--warning));
   }
 
-  /* Gradientes dinâmicos */
-  .gradient-primary {
-    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  .accent-color {
+    color: hsl(var(--accent));
   }
 
-  .gradient-secondary {
-    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end));
+  /* Gradientes dinâmicos - CORRIGIDO */
+  .gradient-primary,
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+  }
+
+  .gradient-secondary,
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end)) !important;
   }
 
   /* Cards do dashboard com gradientes */
   .dashboard-gradient-card {
-    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
     color: white;
   }
 
   .dashboard-gradient-card-secondary {
-    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end));
+    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end)) !important;
     color: white;
   }
 
@@ -256,10 +267,18 @@
 
   /* Classes utilitárias para gradientes */
   .bg-gradient-primary {
-    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
   }
 
   .bg-gradient-secondary {
-    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end));
+    background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end)) !important;
+  }
+
+  /* Texto com gradiente */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }

@@ -36,8 +36,35 @@ interface ColorTemplate {
 
 const colorTemplates: ColorTemplate[] = [
   {
+    id: 'logo-educational-blue',
+    name: 'Logo Educacional (Azul/Amarelo)',
+    description: 'Baseado no logotipo educacional com azul e amarelo vibrantes',
+    preview: ['#1e40af', '#fbbf24', '#eff6ff', '#3b82f6'],
+    colors: {
+      primaryColor: '#1e40af',
+      secondaryColor: '#3b82f6',
+      accentColor: '#fbbf24',
+      successColor: '#10b981',
+      warningColor: '#f59e0b',
+      dangerColor: '#ef4444',
+      backgroundColor: '#ffffff',
+      surfaceColor: '#fefefe',
+      borderColor: '#dbeafe',
+      textPrimary: '#1e293b',
+      textSecondary: '#475569',
+      textMuted: '#94a3b8',
+      menuBackground: '#eff6ff',
+      menuActive: '#1e40af',
+      menuHover: '#dbeafe',
+      gradientStart: '#1e40af',
+      gradientEnd: '#3b82f6',
+      gradientSecondStart: '#fbbf24',
+      gradientSecondEnd: '#f59e0b',
+    }
+  },
+  {
     id: 'pink-gradient',
-    name: 'Pink Gradient (Logo 1)',
+    name: 'Rosa Vibrante (Logo 1)',
     description: 'Baseado no primeiro logotipo com tons vibrantes de rosa e magenta',
     preview: ['#ec4899', '#be185d', '#fdf2f8', '#e11d48'],
     colors: {
@@ -49,23 +76,23 @@ const colorTemplates: ColorTemplate[] = [
       dangerColor: '#ef4444',
       backgroundColor: '#ffffff',
       surfaceColor: '#fefefe',
-      borderColor: '#f3e8ff',
+      borderColor: '#fce7f3',
       textPrimary: '#1f2937',
       textSecondary: '#6b7280',
       textMuted: '#9ca3af',
       menuBackground: '#fdf2f8',
       menuActive: '#ec4899',
-      menuHover: '#f9a8d4',
+      menuHover: '#fce7f3',
       gradientStart: '#ec4899',
       gradientEnd: '#be185d',
       gradientSecondStart: '#f472b6',
-      gradientSecondEnd: '#a21caf',
+      gradientSecondEnd: '#e11d48',
     }
   },
   {
     id: 'blue-corporate',
-    name: 'Azul Corporativo (Logo 2)',
-    description: 'Inspirado no segundo logotipo com tons profissionais de azul',
+    name: 'Azul Corporativo Profissional',
+    description: 'Design profissional com tons harmoniosos de azul',
     preview: ['#3b82f6', '#1e40af', '#f8fafc', '#0ea5e9'],
     colors: {
       primaryColor: '#3b82f6',
@@ -82,7 +109,7 @@ const colorTemplates: ColorTemplate[] = [
       textMuted: '#94a3b8',
       menuBackground: '#f8fafc',
       menuActive: '#3b82f6',
-      menuHover: '#dbeafe',
+      menuHover: '#e2e8f0',
       gradientStart: '#3b82f6',
       gradientEnd: '#1e40af',
       gradientSecondStart: '#0ea5e9',
@@ -92,7 +119,7 @@ const colorTemplates: ColorTemplate[] = [
   {
     id: 'clean-minimal',
     name: 'Clean & Minimal',
-    description: 'Design limpo e minimalista com tons neutros e contrastes perfeitos',
+    description: 'Design limpo e minimalista com tons neutros elegantes',
     preview: ['#334155', '#64748b', '#f8fafc', '#10b981'],
     colors: {
       primaryColor: '#334155',
@@ -118,8 +145,8 @@ const colorTemplates: ColorTemplate[] = [
   },
   {
     id: 'sophisticated-purple',
-    name: 'Roxo Sofisticado',
-    description: 'Elegante e profissional com tons harmoniosos de roxo e violeta',
+    name: 'Roxo Sofisticado Premium',
+    description: 'Elegante e profissional com tons harmoniosos de roxo',
     preview: ['#7c3aed', '#5b21b6', '#faf5ff', '#a855f7'],
     colors: {
       primaryColor: '#7c3aed',
@@ -136,17 +163,17 @@ const colorTemplates: ColorTemplate[] = [
       textMuted: '#6b7280',
       menuBackground: '#faf5ff',
       menuActive: '#7c3aed',
-      menuHover: '#ddd6fe',
+      menuHover: '#e9d5ff',
       gradientStart: '#7c3aed',
       gradientEnd: '#5b21b6',
       gradientSecondStart: '#a855f7',
-      gradientSecondEnd: '#7c3aed',
+      gradientSecondEnd: '#8b5cf6',
     }
   },
   {
     id: 'dark-elegant',
     name: 'Dark Elegante',
-    description: 'Tema escuro moderno com contrastes perfeitos e acentos vibrantes',
+    description: 'Tema escuro moderno com contrastes perfeitos',
     preview: ['#6366f1', '#4f46e5', '#0f172a', '#8b5cf6'],
     colors: {
       primaryColor: '#6366f1',
@@ -226,7 +253,7 @@ const colorTemplates: ColorTemplate[] = [
   },
   {
     id: 'forest-green',
-    name: 'Verde Floresta',
+    name: 'Verde Floresta Natural',
     description: 'Tons naturais e harmoniosos de verde com acentos terrosos',
     preview: ['#16a34a', '#15803d', '#f0fdf4', '#22c55e'],
     colors: {
@@ -249,33 +276,6 @@ const colorTemplates: ColorTemplate[] = [
       gradientEnd: '#15803d',
       gradientSecondStart: '#22c55e',
       gradientSecondEnd: '#059669',
-    }
-  },
-  {
-    id: 'rose-gold',
-    name: 'Rose Gold Premium',
-    description: 'Tons elegantes de rose gold com acentos dourados',
-    preview: ['#e11d48', '#be123c', '#fff1f2', '#f43f5e'],
-    colors: {
-      primaryColor: '#e11d48',
-      secondaryColor: '#be123c',
-      accentColor: '#f43f5e',
-      successColor: '#10b981',
-      warningColor: '#f59e0b',
-      dangerColor: '#dc2626',
-      backgroundColor: '#ffffff',
-      surfaceColor: '#fefefe',
-      borderColor: '#fce7e7',
-      textPrimary: '#1f2937',
-      textSecondary: '#4b5563',
-      textMuted: '#6b7280',
-      menuBackground: '#fff1f2',
-      menuActive: '#e11d48',
-      menuHover: '#fce7e7',
-      gradientStart: '#e11d48',
-      gradientEnd: '#be123c',
-      gradientSecondStart: '#f43f5e',
-      gradientSecondEnd: '#e11d48',
     }
   }
 ];
