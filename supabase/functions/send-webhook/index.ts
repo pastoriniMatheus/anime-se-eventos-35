@@ -89,8 +89,8 @@ serve(async (req) => {
     }
 
     // Gerar código único de entrega
-    const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    console.log('🆔 Código de entrega gerado:', deliveryCode);
+    const deliveryCode = webhook_data.delivery_code || `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    console.log('🆔 Código de entrega:', deliveryCode);
 
     // Buscar leads baseado nos filtros
     let query = supabaseClient
@@ -108,8 +108,8 @@ serve(async (req) => {
         lead_statuses(name, color)
       `);
 
-    // Aplicar filtros corretamente
-    if (webhook_data.filter_type && webhook_data.filter_value) {
+    // Aplicar filtros se especificados
+    if (webhook_data.filter_type && webhook_data.filter_value && webhook_data.filter_type !== 'all') {
       console.log('🔍 Aplicando filtro:', webhook_data.filter_type, '=', webhook_data.filter_value);
       switch (webhook_data.filter_type) {
         case 'course':
@@ -298,26 +298,9 @@ serve(async (req) => {
           url: webhook_url
         });
         
-        let errorMessage = `Webhook retornou status ${response.status}`;
-        let errorDetails = responseText;
-        
-        if (response.status === 404) {
-          errorMessage = 'Webhook não encontrado (404)';
-          errorDetails = 'Verifique se a URL está correta: ' + webhook_url;
-        } else if (response.status === 405) {
-          errorMessage = 'Método não permitido (405)';
-          errorDetails = 'O webhook não aceita POST. URL: ' + webhook_url;
-        } else if (response.status === 400) {
-          errorMessage = 'Dados inválidos (400)';
-          errorDetails = 'O webhook rejeitou os dados enviados: ' + responseText;
-        } else if (response.status === 500) {
-          errorMessage = 'Erro interno do servidor (500)';
-          errorDetails = 'Problema no n8n: ' + responseText;
-        }
-        
         return new Response(JSON.stringify({
-          error: errorMessage,
-          details: errorDetails,
+          error: `Webhook retornou status ${response.status}`,
+          details: responseText,
           webhook_response: responseText,
           status_code: response.status,
           webhook_url: webhook_url,
@@ -369,25 +352,9 @@ serve(async (req) => {
         })
         .eq('id', messageHistory.id);
       
-      let errorMessage = 'Erro ao conectar com o webhook';
-      let errorDetails: any = {};
-      
-      if (fetchError.name === 'AbortError') {
-        errorMessage = 'Timeout: Webhook demorou mais de 30 segundos';
-        errorDetails = { timeout: true, duration: '30s' };
-      } else if (fetchError.message?.includes('fetch')) {
-        errorMessage = 'Não foi possível conectar ao webhook';
-        errorDetails = { connection_error: true, url: webhook_url };
-      } else {
-        errorDetails = { 
-          error_type: fetchError.name || 'UnknownError',
-          original_message: fetchError.message
-        };
-      }
-      
       return new Response(JSON.stringify({
-        error: errorMessage,
-        details: errorDetails,
+        error: 'Erro ao conectar com o webhook',
+        details: fetchError.message,
         webhook_url: webhook_url,
         message_id: messageHistory.id,
         delivery_code: deliveryCode
