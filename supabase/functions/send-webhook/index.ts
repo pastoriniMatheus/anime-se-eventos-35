@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -304,25 +305,38 @@ serve(async (req) => {
     // Criar registro no histórico de mensagens
     console.log('💾 Criando histórico de mensagem...');
     try {
+      // Preparar dados para histórico com validação correta dos tipos
+      const historyData = {
+        type: webhook_data.type || 'whatsapp',
+        content: webhook_data.content || '',
+        delivery_code: deliveryCode,
+        filter_type: webhook_data.filter_type || null,
+        filter_value: webhook_data.filter_value ? String(webhook_data.filter_value) : null,
+        recipients_count: leadsToSend.length,
+        status: 'sending'
+      };
+
+      console.log('📋 Dados do histórico a ser criado:', historyData);
+
       const { data: messageHistory, error: historyError } = await supabaseClient
         .from('message_history')
-        .insert({
-          type: webhook_data.type,
-          content: webhook_data.content,
-          delivery_code: deliveryCode,
-          filter_type: webhook_data.filter_type,
-          filter_value: webhook_data.filter_value ? String(webhook_data.filter_value) : null,
-          recipients_count: leadsToSend.length,
-          status: 'sending'
-        })
+        .insert(historyData)
         .select()
         .single();
 
       if (historyError) {
         console.error('❌ Erro ao criar histórico:', historyError);
+        console.error('❌ Detalhes do erro:', {
+          message: historyError.message,
+          details: historyError.details,
+          hint: historyError.hint,
+          code: historyError.code
+        });
         return new Response(JSON.stringify({
           error: 'Database error while creating message history',
-          details: historyError.message
+          details: historyError.message,
+          error_code: historyError.code,
+          error_hint: historyError.hint
         }), { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
