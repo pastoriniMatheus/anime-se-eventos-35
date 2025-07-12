@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Trash2, Star } from 'lucide-react';
+import { FileText, Trash2, Star, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMessageTemplates, useDeleteMessageTemplate, useSetDefaultTemplate } from '@/hooks/useMessages';
+import { useMessageTemplates, useDeleteMessageTemplate, useSetDefaultTemplate, useSetConversionDefaultTemplate } from '@/hooks/useMessages';
 
 interface MessageTemplatesProps {
   onLoadTemplate: (template: any) => void;
@@ -17,7 +17,9 @@ const MessageTemplates = ({ onLoadTemplate }: MessageTemplatesProps) => {
   const { data: templates = [] } = useMessageTemplates();
   const deleteTemplateMutation = useDeleteMessageTemplate();
   const setDefaultTemplateMutation = useSetDefaultTemplate();
+  const setConversionDefaultTemplateMutation = useSetConversionDefaultTemplate();
   const [pendingDefaultId, setPendingDefaultId] = useState<string | null>(null);
+  const [pendingConversionDefaultId, setPendingConversionDefaultId] = useState<string | null>(null);
 
   const handleLoadTemplate = (template: any) => {
     console.log('Carregando template:', template);
@@ -41,7 +43,7 @@ const MessageTemplates = ({ onLoadTemplate }: MessageTemplatesProps) => {
     
     if (currentDefault && currentDefault.id !== templateId) {
       const confirmed = window.confirm(
-        `A mensagem "${templateName}" será padronizada e a atual "${currentDefault.name}" será substituída. Deseja continuar?`
+        `A mensagem "${templateName}" será padronizada para novos leads e a atual "${currentDefault.name}" será substituída. Deseja continuar?`
       );
       
       if (!confirmed) {
@@ -63,12 +65,39 @@ const MessageTemplates = ({ onLoadTemplate }: MessageTemplatesProps) => {
     }
   };
 
+  const handleSetConversionDefault = async (templateId: string, templateName: string) => {
+    const currentConversionDefault = templates.find((t: any) => t.is_conversion_default);
+    
+    if (currentConversionDefault && currentConversionDefault.id !== templateId) {
+      const confirmed = window.confirm(
+        `A mensagem "${templateName}" será padronizada para conversões e a atual "${currentConversionDefault.name}" será substituída. Deseja continuar?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    try {
+      setPendingConversionDefaultId(templateId);
+      await setConversionDefaultTemplateMutation.mutateAsync(templateId);
+      toast({
+        title: "Template de conversão definido",
+        description: `Template "${templateName}" foi definido como padrão para conversões`,
+      });
+    } catch (error) {
+      console.error('Erro ao definir template de conversão:', error);
+    } finally {
+      setPendingConversionDefaultId(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Templates de Mensagem</CardTitle>
         <CardDescription>
-          Gerencie seus templates de mensagem salvos e defina o template padrão para novos leads
+          Gerencie seus templates de mensagem salvos e defina os templates padrão para novos leads e conversões
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -89,7 +118,13 @@ const MessageTemplates = ({ onLoadTemplate }: MessageTemplatesProps) => {
                       {template.is_default && (
                         <Badge variant="default" className="bg-blue-100 text-blue-800">
                           <Star className="h-3 w-3 mr-1" />
-                          Padrão
+                          Novos Leads
+                        </Badge>
+                      )}
+                      {template.is_conversion_default && (
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          <Trophy className="h-3 w-3 mr-1" />
+                          Conversões
                         </Badge>
                       )}
                     </div>
@@ -104,23 +139,43 @@ const MessageTemplates = ({ onLoadTemplate }: MessageTemplatesProps) => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`default-${template.id}`}
-                        checked={template.is_default || false}
-                        disabled={pendingDefaultId === template.id}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            handleSetDefault(template.id, template.name);
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor={`default-${template.id}`}
-                        className="text-xs text-gray-600 cursor-pointer"
-                      >
-                        Padrão
-                      </label>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`default-${template.id}`}
+                          checked={template.is_default || false}
+                          disabled={pendingDefaultId === template.id}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              handleSetDefault(template.id, template.name);
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`default-${template.id}`}
+                          className="text-xs text-gray-600 cursor-pointer"
+                        >
+                          Novos Leads
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`conversion-${template.id}`}
+                          checked={template.is_conversion_default || false}
+                          disabled={pendingConversionDefaultId === template.id}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              handleSetConversionDefault(template.id, template.name);
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`conversion-${template.id}`}
+                          className="text-xs text-gray-600 cursor-pointer"
+                        >
+                          Conversões
+                        </label>
+                      </div>
                     </div>
                     <Button
                       variant="outline"

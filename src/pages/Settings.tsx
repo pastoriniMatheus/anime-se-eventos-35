@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,12 +15,14 @@ import APIsSettings from '@/components/APIsSettings';
 import CourseManager from '@/components/CourseManager';
 import PostgraduateCourseManager from '@/components/PostgraduateCourseManager';
 import AutoMessageSettings from '@/components/AutoMessageSettings';
+import ConversionMessageSettings from '@/components/ConversionMessageSettings';
 import { useNomenclature } from '@/hooks/useNomenclature';
 import { Layout } from '@/components/Layout';
 
 const Settings = () => {
   const [activeMainTab, setActiveMainTab] = useState('webhooks');
   const [activeSecondaryTab, setActiveSecondaryTab] = useState('webhooks');
+  const [activeMessageTab, setActiveMessageTab] = useState('new-leads');
   const { courseNomenclature, postgraduateNomenclature } = useNomenclature();
   const supabaseUrl = "https://iznfrkdsmbtynmifqcdd.supabase.co";
 
@@ -76,7 +79,20 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="messages">
-          <AutoMessageSettings />
+          <Tabs value={activeMessageTab} onValueChange={setActiveMessageTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="new-leads">Novos Leads</TabsTrigger>
+              <TabsTrigger value="conversions">Conversões</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="new-leads">
+              <AutoMessageSettings />
+            </TabsContent>
+
+            <TabsContent value="conversions">
+              <ConversionMessageSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="personalization">

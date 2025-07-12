@@ -116,7 +116,7 @@ export const useSetDefaultTemplate = () => {
 
   return useMutation({
     mutationFn: async (templateId: string) => {
-      console.log('Definindo template padrão:', templateId);
+      console.log('Definindo template padrão para novos leads:', templateId);
       
       // Primeiro, remove o padrão de todos os templates
       await (supabase as any)
@@ -140,6 +140,42 @@ export const useSetDefaultTemplate = () => {
       toast({
         title: "Erro",
         description: error.message || "Erro ao definir template padrão",
+        variant: "destructive",
+      });
+    }
+  });
+};
+
+export const useSetConversionDefaultTemplate = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      console.log('Definindo template padrão para conversões:', templateId);
+      
+      // Primeiro, remove o padrão de conversão de todos os templates
+      await (supabase as any)
+        .from('message_templates')
+        .update({ is_conversion_default: false })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // Depois, define o template selecionado como padrão de conversão
+      const { error } = await (supabase as any)
+        .from('message_templates')
+        .update({ is_conversion_default: true })
+        .eq('id', templateId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['message_templates'] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao definir template de conversão:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao definir template de conversão",
         variant: "destructive",
       });
     }
