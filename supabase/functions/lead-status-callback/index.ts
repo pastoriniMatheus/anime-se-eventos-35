@@ -37,10 +37,10 @@ serve(async (req) => {
       });
     }
 
-    // Buscar o status pelo nome
+    // Buscar o status pelo nome (case insensitive)
     const { data: status, error: statusError } = await supabase
       .from('lead_statuses')
-      .select('id')
+      .select('id, name')
       .ilike('name', status_name)
       .single();
 
@@ -52,7 +52,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('📊 Status encontrado:', { status_id: status.id, status_name });
+    console.log('📊 Status encontrado:', { status_id: status.id, status_name: status.name });
 
     // Verificar se o lead existe e buscar status anterior
     const { data: existingLead, error: leadError } = await supabase

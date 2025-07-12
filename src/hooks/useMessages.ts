@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,14 +21,24 @@ export const useMessages = () => {
   return useQuery({
     queryKey: ['message_history'],
     queryFn: async () => {
+      console.log('🔍 Buscando histórico de mensagens...');
       const { data, error } = await (supabase as any)
         .from('message_history')
         .select('*')
         .order('sent_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar mensagens:', error);
+        throw error;
+      }
+      
+      console.log('📋 Mensagens encontradas:', data?.length || 0);
+      console.log('📋 Tipos de mensagens:', data?.map(m => ({ id: m.id, filter_type: m.filter_type, type: m.type })) || []);
+      
       return data || [];
-    }
+    },
+    staleTime: 30 * 1000, // 30 segundos
+    refetchInterval: 60 * 1000, // Refetch a cada 1 minuto
   });
 };
 

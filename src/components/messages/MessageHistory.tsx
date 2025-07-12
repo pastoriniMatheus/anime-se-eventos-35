@@ -15,6 +15,9 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
   const { data: messages = [], isLoading: messagesLoading } = useMessages();
   const clearHistoryMutation = useClearMessageHistory();
 
+  console.log('📋 Mensagens carregadas no componente:', messages.length);
+  console.log('📋 Tipos de filtro encontrados:', [...new Set(messages.map((m: any) => m.filter_type))]);
+
   // Separar mensagens automáticas das manuais
   const automaticMessages = messages.filter((msg: any) => 
     msg.filter_type === 'auto_new_lead' || 
@@ -25,6 +28,9 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
     msg.filter_type !== 'auto_new_lead' && 
     msg.filter_type !== 'automatic_conversion'
   );
+
+  console.log('🤖 Mensagens automáticas:', automaticMessages.length);
+  console.log('👤 Mensagens manuais:', manualMessages.length);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -67,7 +73,10 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
     <div className="space-y-4">
       {messageList.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Nenhuma mensagem {title.toLowerCase()} enviada ainda
+          <div className="flex items-center justify-center mb-2">
+            {icon}
+          </div>
+          <p>Nenhuma mensagem {title.toLowerCase()} enviada ainda</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -88,7 +97,7 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
                     </Badge>
                   </div>
                   <span className="text-sm text-gray-500">
-                    {msg.recipients_count} destinatários
+                    {msg.recipients_count} destinatário{msg.recipients_count !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -112,6 +121,11 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
                 <div className="text-xs text-gray-500">
                   Filtro: {getMessageTypeLabel(msg.filter_type)}
                   {msg.filter_value && ` - ID: ${msg.filter_value}`}
+                </div>
+              )}
+              {msg.delivery_code && (
+                <div className="text-xs text-gray-400">
+                  Código de entrega: {msg.delivery_code}
                 </div>
               )}
             </div>
