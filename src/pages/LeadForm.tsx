@@ -337,13 +337,25 @@ const LeadForm = () => {
         return false;
       }
 
-      // Validação do WhatsApp se habilitada
-      const whatsappValidationEnabled = settingsArray.find(s => s.key === 'whatsapp_validation_enabled')?.value === 'true';
+      // VALIDAÇÃO DO WHATSAPP AGORA É OBRIGATÓRIA
+      console.log('[LeadForm] Verificando se WhatsApp foi validado...');
       
-      if (whatsappValidationEnabled && validationResult !== 'valid') {
+      if (validationResult !== 'valid') {
+        console.log('[LeadForm] WhatsApp não validado, iniciando validação...');
+        toast({
+          title: "Validação necessária",
+          description: "Por favor, aguarde a validação do seu número de WhatsApp.",
+          variant: "default",
+        });
+        
         const isValid = await validateWhatsApp(formData.whatsapp);
-        if (!isValid) return false;
+        if (!isValid) {
+          console.log('[LeadForm] Validação do WhatsApp falhou');
+          return false;
+        }
       }
+
+      console.log('[LeadForm] WhatsApp validado com sucesso, prosseguindo...');
 
       // Verificar se o lead já existe
       try {

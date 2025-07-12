@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Phone, Mail } from 'lucide-react';
+import { User, Phone, Mail, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface PersonalInfoStepProps {
   formData: {
@@ -42,7 +42,7 @@ const PersonalInfoStep = ({
       <div className="space-y-2">
         <Label htmlFor="whatsapp" className="text-gray-700 font-medium flex items-center gap-2 lead-form-label">
           <Phone className="w-4 h-4" />
-          WhatsApp *
+          WhatsApp * (Obrigatória validação)
         </Label>
         <Input
           id="whatsapp"
@@ -53,15 +53,39 @@ const PersonalInfoStep = ({
           placeholder="(11) 99999-9999"
           required
         />
-        {isValidating && (
-          <p className="text-sm text-blue-600">Validando número...</p>
-        )}
-        {validationResult === 'valid' && (
-          <p className="text-sm text-green-600">✓ Número validado</p>
-        )}
-        {validationResult === 'invalid' && (
-          <p className="text-sm text-red-600">✗ Número inválido</p>
-        )}
+        
+        {/* Status da validação com ícones e cores melhoradas */}
+        <div className="min-h-[24px]">
+          {isValidating && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-2 rounded-md border border-blue-200">
+              <Clock className="w-4 h-4 animate-spin" />
+              <span>Validando número do WhatsApp...</span>
+            </div>
+          )}
+          {validationResult === 'valid' && !isValidating && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded-md border border-green-200">
+              <CheckCircle className="w-4 h-4" />
+              <span>✓ Número do WhatsApp validado com sucesso</span>
+            </div>
+          )}
+          {validationResult === 'invalid' && !isValidating && (
+            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 p-2 rounded-md border border-red-200">
+              <XCircle className="w-4 h-4" />
+              <span>✗ Número do WhatsApp inválido ou não encontrado</span>
+            </div>
+          )}
+          {!validationResult && !isValidating && formData.whatsapp && (
+            <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded-md border border-orange-200">
+              <Clock className="w-4 h-4" />
+              <span>Aguardando validação do WhatsApp</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
+          <strong>Importante:</strong> É obrigatório validar seu número de WhatsApp para prosseguir. 
+          Certifique-se de que o número está correto e ativo.
+        </div>
       </div>
 
       <div className="space-y-2">
