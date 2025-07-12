@@ -37,6 +37,7 @@ const App = () => (
               <Route path="/messages" element={<Messages />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/qr-code" element={<QRCode />} />
+              <Route path="/form" element={<LeadForm />} />
               <Route path="/lead-form" element={<LeadForm />} />
               <Route path="/apresentacao" element={<Apresentacao />} />
               <Route path="*" element={<NotFound />} />
