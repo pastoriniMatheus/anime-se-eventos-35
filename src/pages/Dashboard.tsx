@@ -132,13 +132,13 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-center justify-between'}`}>
             <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold bg-gradient-primary bg-clip-text text-transparent mb-2`}>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-primary mb-2`}>
                 Dashboard Executivo
               </h1>
-              <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Visão geral do seu sistema de captação de leads</p>
+              <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>Visão geral do seu sistema de captação de leads</p>
             </div>
             <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center space-x-4'}`}>
-              <div className={`text-sm text-gray-500 flex items-center ${isMobile ? 'text-xs' : ''}`}>
+              <div className={`text-sm text-muted-foreground flex items-center ${isMobile ? 'text-xs' : ''}`}>
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Última atualização: {lastUpdate}
               </div>

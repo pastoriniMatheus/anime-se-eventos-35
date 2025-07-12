@@ -36,6 +36,33 @@ interface ColorTemplate {
 
 const colorTemplates: ColorTemplate[] = [
   {
+    id: 'educational-professional',
+    name: 'Educacional Profissional',
+    description: 'Cores educacionais profissionais em azul e amarelo com alta legibilidade',
+    preview: ['#1e40af', '#fbbf24', '#eff6ff', '#0369a1'],
+    colors: {
+      primaryColor: '#1e40af',
+      secondaryColor: '#0369a1',
+      accentColor: '#fbbf24',
+      successColor: '#10b981',
+      warningColor: '#f59e0b',
+      dangerColor: '#ef4444',
+      backgroundColor: '#ffffff',
+      surfaceColor: '#f8fafc',
+      borderColor: '#dbeafe',
+      textPrimary: '#1e293b',
+      textSecondary: '#475569',
+      textMuted: '#94a3b8',
+      menuBackground: '#eff6ff',
+      menuActive: '#1e40af',
+      menuHover: '#dbeafe',
+      gradientStart: '#1e40af',
+      gradientEnd: '#0369a1',
+      gradientSecondStart: '#fbbf24',
+      gradientSecondEnd: '#f59e0b',
+    }
+  },
+  {
     id: 'logo-educational-blue',
     name: 'Logo Educacional (Azul/Amarelo)',
     description: 'Baseado no logotipo educacional com azul e amarelo vibrantes',
