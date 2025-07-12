@@ -13,13 +13,15 @@ export const Layout = ({ children }: LayoutProps) => {
   const isMobile = useIsMobile();
   
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col overflow-x-hidden">
       <Header />
       <main className={cn(
-        "flex-1 overflow-auto",
-        isMobile ? "p-2" : "p-6"
+        "flex-1 overflow-auto w-full max-w-full",
+        isMobile ? "p-3 px-4" : "p-6"
       )}>
-        {children || <Outlet />}
+        <div className="w-full max-w-full overflow-x-hidden">
+          {children || <Outlet />}
+        </div>
       </main>
     </div>
   );
