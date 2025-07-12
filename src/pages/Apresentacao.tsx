@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import LeadSyncLogo from '@/components/LeadSyncLogo';
 import { 
   BarChart3, Users, QrCode, MessageSquare, FileText, Shield, Zap, Target, 
   CheckCircle, ArrowRight, GraduationCap, Building2, Database, Webhook, 
@@ -17,11 +17,6 @@ const Apresentacao = () => {
   const {
     data: systemSettings = []
   } = useSystemSettings();
-  
-  const logoSetting = systemSettings.find((s: any) => s.key === 'logo');
-  const logoUrl = logoSetting ? 
-    typeof logoSetting.value === 'string' ? logoSetting.value : JSON.parse(String(logoSetting.value)) : 
-    '/lovable-uploads/c7eb5d40-5d53-4b46-b5a9-d35d5a784ac7.png';
 
   const problemas = [
     "Perda de leads por preenchimento manual incorreto ou incompleto",
@@ -144,13 +139,7 @@ const Apresentacao = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <img src={logoUrl} alt="Logo" className="h-12 w-auto" />
-            <div>
-              <h1 className="text-xl font-bold text-blue-800">LeadSync</h1>
-              <p className="text-sm text-gray-600">Automação Inteligente para Eventos</p>
-            </div>
-          </div>
+          <LeadSyncLogo size="md" />
           <Button 
             onClick={() => navigate('/login')} 
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
@@ -164,9 +153,7 @@ const Apresentacao = () => {
       <section className="py-20 px-6">
         <div className="container mx-auto text-center">
           <div className="flex justify-center mb-8">
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-yellow-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-              <Zap className="w-16 h-16 text-white" />
-            </div>
+            <LeadSyncLogo size="xl" showText={false} className="animate-pulse" />
           </div>
           <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent">
             LeadSync
@@ -403,10 +390,7 @@ const Apresentacao = () => {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
-              <div className="flex items-center space-x-4 mb-4">
-                <img src={logoUrl} alt="LeadSync" className="h-10 w-auto" />
-                <span className="text-xl font-bold">LeadSync</span>
-              </div>
+              <LeadSyncLogo size="md" className="mb-4" />
               <p className="text-gray-400 mb-4">
                 A solução completa para automação inteligente de captação de leads em eventos.
               </p>
