@@ -324,6 +324,12 @@ const LeadForm = () => {
     }
   };
 
+  const handleValidateWhatsApp = async () => {
+    if (formData.whatsapp) {
+      await validateWhatsApp(formData.whatsapp);
+    }
+  };
+
   const validateCurrentStep = async () => {
     console.log(`[LeadForm] Validando etapa ${currentStep}`);
     
@@ -337,22 +343,17 @@ const LeadForm = () => {
         return false;
       }
 
-      // VALIDAÇÃO DO WHATSAPP AGORA É OBRIGATÓRIA
-      console.log('[LeadForm] Verificando se WhatsApp foi validado...');
+      // VALIDAÇÃO DO WHATSAPP É OBRIGATÓRIA
+      console.log('[LeadForm] Verificando validação do WhatsApp...');
       
       if (validationResult !== 'valid') {
-        console.log('[LeadForm] WhatsApp não validado, iniciando validação...');
+        console.log('[LeadForm] WhatsApp não foi validado');
         toast({
-          title: "Validação necessária",
-          description: "Por favor, aguarde a validação do seu número de WhatsApp.",
-          variant: "default",
+          title: "Validação obrigatória",
+          description: "É necessário validar seu número de WhatsApp antes de prosseguir. Clique no botão 'Validar'.",
+          variant: "destructive",
         });
-        
-        const isValid = await validateWhatsApp(formData.whatsapp);
-        if (!isValid) {
-          console.log('[LeadForm] Validação do WhatsApp falhou');
-          return false;
-        }
+        return false;
       }
 
       console.log('[LeadForm] WhatsApp validado com sucesso, prosseguindo...');
@@ -534,6 +535,7 @@ const LeadForm = () => {
                     onFormDataChange={handleChange}
                     validationResult={validationResult}
                     isValidating={isValidating}
+                    onValidateWhatsApp={handleValidateWhatsApp}
                   />
                 )}
 
