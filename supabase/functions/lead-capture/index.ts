@@ -171,30 +171,34 @@ serve(async (req) => {
       }
     }
 
-    // ============= ENVIO AUTOMÁTICO DE WEBHOOK =============
+    // ============= VERIFICAÇÃO DE ENVIO AUTOMÁTICO =============
     console.log('🔍 === VERIFICANDO ENVIO AUTOMÁTICO ===');
     
     try {
       // 1. VERIFICAR SE ENVIO AUTOMÁTICO ESTÁ HABILITADO
-      const { data: allSettings, error: allSettingsError } = await supabase
+      const { data: autoMessageSetting, error: autoSettingError } = await supabase
         .from('system_settings')
-        .select('*');
+        .select('value')
+        .eq('key', 'auto_message_enabled')
+        .single();
 
-      console.log('📊 CONFIGURAÇÕES ENCONTRADAS:', {
-        total: allSettings?.length || 0,
-        settings: allSettings?.map(s => ({ key: s.key, value: s.value })) || [],
-        error: allSettingsError?.message
-      });
-
-      const autoMessageSetting = allSettings?.find(s => s.key === 'auto_message_enabled');
-      console.log('🤖 AUTO MESSAGE ENABLED:', {
+      console.log('🤖 CONFIGURAÇÃO AUTO MESSAGE:', {
         found: !!autoMessageSetting,
-        value: autoMessageSetting?.value,
-        is_enabled: autoMessageSetting?.value === 'true'
+        raw_value: autoMessageSetting?.value,
+        error: autoSettingError?.message
       });
 
-      if (!autoMessageSetting || autoMessageSetting.value !== 'true') {
-        console.log('🚫 ENVIO AUTOMÁTICO DESABILITADO');
+      // VERIFICAÇÃO RIGOROSA: deve ser exatamente 'true' como string
+      const isAutoSendEnabled = autoMessageSetting?.value === 'true';
+      
+      console.log('✅ VERIFICAÇÃO FINAL AUTO SEND:', {
+        setting_value: autoMessageSetting?.value,
+        is_enabled: isAutoSendEnabled,
+        comparison: `"${autoMessageSetting?.value}" === "true" = ${isAutoSendEnabled}`
+      });
+
+      if (!isAutoSendEnabled) {
+        console.log('🚫 ENVIO AUTOMÁTICO DESABILITADO - Parando execução');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
@@ -206,13 +210,19 @@ serve(async (req) => {
         });
       }
 
-      console.log('✅ ENVIO AUTOMÁTICO HABILITADO');
+      console.log('✅ ENVIO AUTOMÁTICO HABILITADO - Continuando...');
 
       // 2. BUSCAR WEBHOOK URL
-      const webhookSetting = allSettings?.find(s => s.key === 'webhook_urls');
+      const { data: webhookSetting, error: webhookError } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'webhook_urls')
+        .single();
+
       console.log('🌐 WEBHOOK URLS SETTING:', {
         found: !!webhookSetting,
-        raw_value: webhookSetting?.value
+        raw_value: webhookSetting?.value,
+        error: webhookError?.message
       });
 
       if (!webhookSetting?.value) {
@@ -270,21 +280,21 @@ serve(async (req) => {
 
       // 3. BUSCAR TEMPLATE PADRÃO
       console.log('📄 BUSCANDO TEMPLATE PADRÃO...');
-      const { data: templates, error: templateError } = await supabase
+      const { data: defaultTemplate, error: templateError } = await supabase
         .from('message_templates')
-        .select('*');
+        .select('*')
+        .eq('is_default', true)
+        .single();
 
-      console.log('📋 TEMPLATES ENCONTRADOS:', {
-        total: templates?.length || 0,
-        templates: templates?.map(t => ({ 
-          id: t.id, 
-          name: t.name, 
-          is_default: t.is_default
-        })) || [],
+      console.log('📋 TEMPLATE PADRÃO:', {
+        found: !!defaultTemplate,
+        template: defaultTemplate ? {
+          id: defaultTemplate.id,
+          name: defaultTemplate.name,
+          is_default: defaultTemplate.is_default
+        } : null,
         error: templateError?.message
       });
-
-      const defaultTemplate = templates?.find(t => t.is_default);
       
       if (!defaultTemplate) {
         console.log('❌ NENHUM TEMPLATE PADRÃO ENCONTRADO');
