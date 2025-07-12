@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -129,11 +128,11 @@ serve(async (req) => {
             events(name),
             lead_statuses(name, color)
           `)
-          .eq('id', leadId);
+          .eq('id', leadId)
+          .single();
 
         console.log('🔍 Resultado da busca do lead:', {
           error: leadError,
-          data_length: singleLead ? singleLead.length : 0,
           data: singleLead
         });
 
@@ -149,7 +148,7 @@ serve(async (req) => {
           });
         }
 
-        if (!singleLead || singleLead.length === 0) {
+        if (!singleLead) {
           console.error('❌ Lead não encontrado:', leadId);
           return new Response(JSON.stringify({
             error: 'Lead not found',
@@ -161,33 +160,32 @@ serve(async (req) => {
           });
         }
 
-        const lead = singleLead[0];
         console.log('✅ Lead encontrado:', {
-          id: lead.id,
-          name: lead.name,
-          whatsapp: lead.whatsapp,
-          has_whatsapp: !!lead.whatsapp
+          id: singleLead.id,
+          name: singleLead.name,
+          whatsapp: singleLead.whatsapp,
+          has_whatsapp: !!singleLead.whatsapp
         });
 
-        if (!lead.whatsapp || lead.whatsapp.trim() === '') {
+        if (!singleLead.whatsapp || singleLead.whatsapp.trim() === '') {
           console.log('❌ Lead não possui WhatsApp válido');
           return new Response(JSON.stringify({
             error: 'Lead has no valid WhatsApp number',
             details: 'Cannot send conversion message to lead without WhatsApp',
             lead_id: leadId,
-            lead_name: lead.name,
-            whatsapp_value: lead.whatsapp
+            lead_name: singleLead.name,
+            whatsapp_value: singleLead.whatsapp
           }), { 
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
-        leadsToSend = [lead];
+        leadsToSend = [singleLead];
         console.log('✅ Lead preparado para conversão:', {
-          id: lead.id,
-          name: lead.name,
-          whatsapp: lead.whatsapp
+          id: singleLead.id,
+          name: singleLead.name,
+          whatsapp: singleLead.whatsapp
         });
 
       } catch (dbError) {
