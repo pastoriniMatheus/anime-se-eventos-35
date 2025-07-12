@@ -29,7 +29,13 @@ serve(async (req) => {
     const { lead_id, status_name, previous_status_id, new_status_id, notes } = await req.json();
 
     console.log('🔄 === INÍCIO DO CALLBACK DE STATUS ===');
-    console.log('📥 DADOS RECEBIDOS:', { lead_id, status_name, previous_status_id, new_status_id, notes });
+    console.log('📥 DADOS RECEBIDOS:', { 
+      lead_id, 
+      status_name, 
+      previous_status_id: previous_status_id || 'NULL', 
+      new_status_id, 
+      notes 
+    });
 
     if (!lead_id || !status_name || !new_status_id) {
       console.log('❌ ERRO: Campos obrigatórios faltando');
@@ -40,7 +46,10 @@ serve(async (req) => {
     }
 
     // Verificar se houve mudança real de status
-    console.log('🔍 COMPARANDO STATUS - Anterior:', previous_status_id, 'Novo:', new_status_id);
+    console.log('🔍 COMPARANDO STATUS:');
+    console.log('   - Status anterior (previous_status_id):', previous_status_id || 'NULL');
+    console.log('   - Status novo (new_status_id):', new_status_id);
+    console.log('   - São iguais?', previous_status_id === new_status_id);
 
     if (previous_status_id === new_status_id) {
       console.log('ℹ️ STATUS NÃO MUDOU, PULANDO PROCESSAMENTO');
@@ -52,6 +61,8 @@ serve(async (req) => {
         status: 200,
       });
     }
+
+    console.log('✅ STATUS MUDOU - PROSSEGUINDO COM PROCESSAMENTO');
 
     // Buscar o lead completo
     console.log('🔍 BUSCANDO LEAD COMPLETO:', lead_id);

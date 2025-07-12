@@ -21,11 +21,18 @@ const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
   const handleStatusChange = async (newStatusId: string) => {
     try {
       console.log('🔄 Iniciando mudança de status do lead:', leadId);
-      console.log('📊 Status anterior:', currentStatus?.name);
+      console.log('📊 Status anterior:', currentStatus?.name, 'ID:', currentStatus?.id);
       
       // Buscar o novo status para obter o nome
       const newStatus = leadStatuses.find(status => status.id === newStatusId);
-      console.log('📊 Novo status:', newStatus?.name);
+      console.log('📊 Novo status:', newStatus?.name, 'ID:', newStatusId);
+
+      // Verificar se houve mudança real
+      if (currentStatus?.id === newStatusId) {
+        console.log('ℹ️ Status não mudou, cancelando operação');
+        setIsEditing(false);
+        return;
+      }
 
       // Atualizar o status do lead primeiro
       const { error: updateError } = await supabase
@@ -40,7 +47,7 @@ const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
 
       console.log('✅ Status do lead atualizado no banco');
 
-      // Chamar a função lead-status-callback com status anterior e novo
+      // Chamar a função lead-status-callback com IDs corretos
       console.log('🚀 Chamando função lead-status-callback...');
       
       const callbackData = {
@@ -59,7 +66,6 @@ const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
 
       if (callbackError) {
         console.error('❌ Erro na função callback:', callbackError);
-        // Não falhar a operação por causa do callback
         toast({
           title: "Status atualizado",
           description: "Status atualizado, mas houve erro no processamento automático",
