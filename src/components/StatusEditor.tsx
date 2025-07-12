@@ -40,12 +40,14 @@ const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
 
       console.log('✅ Status do lead atualizado no banco');
 
-      // Chamar a função lead-status-callback
+      // Chamar a função lead-status-callback com status anterior e novo
       console.log('🚀 Chamando função lead-status-callback...');
       
       const callbackData = {
         lead_id: leadId,
         status_name: newStatus?.name || 'Unknown',
+        previous_status_id: currentStatus?.id || null,
+        new_status_id: newStatusId,
         notes: `Status alterado via interface de ${currentStatus?.name || 'status anterior'} para ${newStatus?.name || 'novo status'}`
       };
 
