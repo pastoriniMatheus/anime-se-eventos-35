@@ -113,6 +113,7 @@ serve(async (req) => {
     // Só verifica conversão se o status mudou (evita loop)
     if (previousStatusId !== status.id) {
       console.log('🔍 === VERIFICANDO ENVIO AUTOMÁTICO DE CONVERSÃO ===');
+      console.log('🔍 Status alterado de:', previousStatusId, 'para:', status.id);
 
       try {
         // 1. VERIFICAR SE ENVIO AUTOMÁTICO DE CONVERSÃO ESTÁ HABILITADO
@@ -218,7 +219,7 @@ serve(async (req) => {
                         type: 'whatsapp',
                         content: conversionTemplate.content,
                         delivery_code: deliveryCode,
-                        filter_type: 'conversion',
+                        filter_type: 'automatic_conversion',
                         filter_value: lead_id,
                         recipients_count: 1,
                         status: 'sending'
@@ -253,7 +254,7 @@ serve(async (req) => {
                       const webhookPayload = {
                         type: "whatsapp",
                         content: conversionTemplate.content,
-                        filter_type: "conversion",
+                        filter_type: "automatic_conversion",
                         filter_value: lead_id,
                         send_only_to_new: false,
                         total_recipients: 1,
