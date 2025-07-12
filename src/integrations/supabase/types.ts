@@ -280,6 +280,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_conversion_default: boolean
           is_default: boolean
           name: string
           type: string
@@ -288,6 +289,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_conversion_default?: boolean
           is_default?: boolean
           name: string
           type: string
@@ -296,6 +298,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_conversion_default?: boolean
           is_default?: boolean
           name?: string
           type?: string
