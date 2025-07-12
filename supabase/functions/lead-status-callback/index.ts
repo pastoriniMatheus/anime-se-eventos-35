@@ -28,9 +28,11 @@ serve(async (req) => {
 
     const { lead_id, status_name, notes } = await req.json();
 
-    console.log('🔄 Callback de status recebido:', { lead_id, status_name, notes });
+    console.log('🔄 === INÍCIO DO CALLBACK DE STATUS ===');
+    console.log('📥 DADOS RECEBIDOS:', { lead_id, status_name, notes });
 
     if (!lead_id || !status_name) {
+      console.log('❌ ERRO: Campos obrigatórios faltando');
       return new Response('Missing required fields: lead_id and status_name', { 
         status: 400,
         headers: corsHeaders 
@@ -38,6 +40,7 @@ serve(async (req) => {
     }
 
     // Buscar o status pelo nome (case insensitive)
+    console.log('🔍 1. BUSCANDO STATUS PELO NOME:', status_name);
     const { data: status, error: statusError } = await supabase
       .from('lead_statuses')
       .select('id, name')
@@ -45,16 +48,17 @@ serve(async (req) => {
       .single();
 
     if (statusError) {
-      console.log('❌ Erro ao buscar status:', statusError);
+      console.log('❌ ERRO AO BUSCAR STATUS:', statusError);
       return new Response(`Status not found: ${status_name}`, { 
         status: 400,
         headers: corsHeaders 
       });
     }
 
-    console.log('📊 Status encontrado:', { status_id: status.id, status_name: status.name });
+    console.log('✅ STATUS ENCONTRADO:', { status_id: status.id, status_name: status.name });
 
     // Verificar se o lead existe e buscar status anterior
+    console.log('🔍 2. BUSCANDO LEAD EXISTENTE:', lead_id);
     const { data: existingLead, error: leadError } = await supabase
       .from('leads')
       .select(`
@@ -68,19 +72,27 @@ serve(async (req) => {
       .single();
 
     if (leadError) {
-      console.log('❌ Erro ao buscar lead:', leadError);
+      console.log('❌ ERRO AO BUSCAR LEAD:', leadError);
       return new Response(`Lead not found: ${lead_id}`, { 
         status: 404,
         headers: corsHeaders 
       });
     }
 
+    console.log('✅ LEAD ENCONTRADO:', {
+      id: existingLead.id,
+      name: existingLead.name,
+      whatsapp: existingLead.whatsapp,
+      status_anterior: existingLead.status_id,
+      status_anterior_nome: existingLead.status?.name
+    });
+
     const previousStatusId = existingLead.status_id;
-    console.log('🔍 Status anterior:', previousStatusId, 'Status novo:', status.id);
+    console.log('🔍 3. COMPARANDO STATUS - Anterior:', previousStatusId, 'Novo:', status.id);
 
     // Só processa se o status realmente mudou
     if (previousStatusId === status.id) {
-      console.log('ℹ️ Status não mudou, pulando processamento');
+      console.log('ℹ️ STATUS NÃO MUDOU, PULANDO PROCESSAMENTO');
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'Status não alterado'
@@ -91,14 +103,11 @@ serve(async (req) => {
     }
 
     // Atualizar o status do lead
+    console.log('🔄 4. ATUALIZANDO STATUS DO LEAD');
     const updateData: any = {
       status_id: status.id,
       updated_at: new Date().toISOString()
     };
-
-    if (notes) {
-      console.log('📝 Notas recebidas:', notes);
-    }
 
     const { data: updatedLead, error: updateError } = await supabase
       .from('leads')
@@ -114,29 +123,21 @@ serve(async (req) => {
       .single();
 
     if (updateError) {
-      console.error('❌ Erro ao atualizar lead:', updateError);
+      console.error('❌ ERRO AO ATUALIZAR LEAD:', updateError);
       return new Response('Error updating lead status', { 
         status: 500,
         headers: corsHeaders 
       });
     }
 
-    console.log('✅ Lead atualizado com sucesso:', updatedLead);
+    console.log('✅ LEAD ATUALIZADO COM SUCESSO');
 
-    // VERIFICAR ENVIO AUTOMÁTICO DE CONVERSÃO
-    console.log('🔍 === INICIANDO VERIFICAÇÃO DE CONVERSÃO ===');
-    console.log('🎯 DADOS DO LEAD ATUALIZADO:', {
-      id: updatedLead.id,
-      name: updatedLead.name,
-      whatsapp: updatedLead.whatsapp,
-      status_name: updatedLead.status?.name,
-      novo_status_id: status.id,
-      novo_status_name: status.name
-    });
+    // === INÍCIO VERIFICAÇÃO DE CONVERSÃO ===
+    console.log('🎯 === INICIANDO VERIFICAÇÃO DE CONVERSÃO ===');
     
     try {
       // 1. VERIFICAR SE ENVIO AUTOMÁTICO DE CONVERSÃO ESTÁ HABILITADO
-      console.log('🔍 1. VERIFICANDO SE CONVERSÃO AUTOMÁTICA ESTÁ HABILITADA...');
+      console.log('🔍 5. VERIFICANDO SE CONVERSÃO AUTOMÁTICA ESTÁ HABILITADA...');
       const { data: conversionMessageSetting, error: conversionSettingError } = await supabase
         .from('system_settings')
         .select('value')
@@ -144,29 +145,29 @@ serve(async (req) => {
         .single();
 
       console.log('🤖 CONFIGURAÇÃO CONVERSÃO MESSAGE:', {
-        found: !!conversionMessageSetting,
-        raw_value: conversionMessageSetting?.value,
-        enabled: conversionMessageSetting?.value === 'true',
-        error: conversionSettingError?.message
+        encontrado: !!conversionMessageSetting,
+        valor_raw: conversionMessageSetting?.value,
+        habilitado: conversionMessageSetting?.value === 'true',
+        erro: conversionSettingError?.message
       });
 
-      if (conversionMessageSetting?.value !== 'true') {
-        console.log('🚫 ENVIO AUTOMÁTICO DE CONVERSÃO DESABILITADO - Saindo');
+      if (!conversionMessageSetting || conversionMessageSetting.value !== 'true') {
+        console.log('🚫 CONVERSÃO AUTOMÁTICA DESABILITADA - SAINDO');
         return new Response(JSON.stringify({ 
           success: true, 
           lead: updatedLead,
           message: `Status do lead ${existingLead.name} atualizado para ${status_name}`,
-          conversion_message: 'Envio automático de conversão desabilitado'
+          conversion_message: 'Conversão automática desabilitada'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       } 
       
-      console.log('✅ ENVIO AUTOMÁTICO DE CONVERSÃO HABILITADO');
+      console.log('✅ CONVERSÃO AUTOMÁTICA HABILITADA');
       
       // 2. BUSCAR STATUS DE CONVERSÃO CONFIGURADO
-      console.log('🔍 2. BUSCANDO STATUS DE CONVERSÃO CONFIGURADO...');
+      console.log('🔍 6. BUSCANDO STATUS DE CONVERSÃO CONFIGURADO...');
       const { data: conversionStatusSetting, error: conversionStatusError } = await supabase
         .from('system_settings')
         .select('value')
@@ -174,16 +175,19 @@ serve(async (req) => {
         .single();
 
       console.log('🎯 VERIFICAÇÃO DE STATUS DE CONVERSÃO:', {
-        found: !!conversionStatusSetting,
-        conversion_status_id: conversionStatusSetting?.value,
-        new_status_id: status.id,
-        new_status_name: status.name,
-        is_conversion: conversionStatusSetting?.value === status.id.toString(),
-        error: conversionStatusError?.message
+        encontrado: !!conversionStatusSetting,
+        conversion_status_id_configurado: conversionStatusSetting?.value,
+        novo_status_id: status.id,
+        novo_status_nome: status.name,
+        é_conversão: conversionStatusSetting?.value === status.id,
+        erro: conversionStatusError?.message
       });
 
-      if (conversionStatusSetting?.value !== status.id.toString()) {
-        console.log('ℹ️ STATUS NÃO É DE CONVERSÃO - Status configurado:', conversionStatusSetting?.value, 'Status atual:', status.id, 'Nome:', status.name);
+      if (!conversionStatusSetting || conversionStatusSetting.value !== status.id) {
+        console.log('ℹ️ STATUS NÃO É DE CONVERSÃO');
+        console.log('   - Status configurado para conversão:', conversionStatusSetting?.value);
+        console.log('   - Status atual do lead:', status.id);
+        console.log('   - Nome do status atual:', status.name);
         return new Response(JSON.stringify({ 
           success: true, 
           lead: updatedLead,
@@ -195,10 +199,10 @@ serve(async (req) => {
         });
       }
 
-      console.log('🎉 LEAD CONVERTIDO DETECTADO - Iniciando envio automático');
+      console.log('🎉 *** CONVERSÃO DETECTADA *** - Processando envio automático');
 
       // 3. BUSCAR TEMPLATE DE CONVERSÃO
-      console.log('🔍 3. BUSCANDO TEMPLATE DE CONVERSÃO...');
+      console.log('🔍 7. BUSCANDO TEMPLATE DE CONVERSÃO...');
       const { data: conversionTemplate, error: templateError } = await supabase
         .from('message_templates')
         .select('*')
@@ -206,15 +210,15 @@ serve(async (req) => {
         .single();
 
       console.log('📝 TEMPLATE DE CONVERSÃO:', {
-        found: !!conversionTemplate,
-        template_name: conversionTemplate?.name,
+        encontrado: !!conversionTemplate,
+        template_nome: conversionTemplate?.name,
         template_id: conversionTemplate?.id,
-        content_preview: conversionTemplate?.content?.substring(0, 50) + '...',
-        error: templateError?.message
+        conteúdo_preview: conversionTemplate?.content?.substring(0, 50) + '...',
+        erro: templateError?.message
       });
 
       if (!conversionTemplate) {
-        console.log('❌ NENHUM TEMPLATE DE CONVERSÃO ENCONTRADO - Saindo');
+        console.log('❌ TEMPLATE DE CONVERSÃO NÃO ENCONTRADO');
         return new Response(JSON.stringify({ 
           success: true, 
           lead: updatedLead,
@@ -229,9 +233,9 @@ serve(async (req) => {
       console.log('⭐ TEMPLATE DE CONVERSÃO ENCONTRADO:', conversionTemplate.name);
 
       // 4. VERIFICAR SE LEAD TEM WHATSAPP
-      console.log('🔍 4. VERIFICANDO WHATSAPP DO LEAD...');
+      console.log('🔍 8. VERIFICANDO WHATSAPP DO LEAD...');
       if (!updatedLead.whatsapp) {
-        console.log('❌ LEAD NÃO TEM WHATSAPP:', updatedLead.whatsapp, '- Saindo');
+        console.log('❌ LEAD NÃO TEM WHATSAPP - SAINDO');
         return new Response(JSON.stringify({ 
           success: true, 
           lead: updatedLead,
@@ -246,7 +250,7 @@ serve(async (req) => {
       console.log('📱 LEAD TEM WHATSAPP:', updatedLead.whatsapp);
       
       // 5. BUSCAR CONFIGURAÇÃO DE WEBHOOK
-      console.log('🔍 5. BUSCANDO CONFIGURAÇÃO DE WEBHOOK...');
+      console.log('🔍 9. BUSCANDO CONFIGURAÇÃO DE WEBHOOK...');
       const { data: webhookSettings, error: webhookError } = await supabase
         .from('system_settings')
         .select('value')
@@ -254,9 +258,9 @@ serve(async (req) => {
         .single();
 
       console.log('🔗 CONFIGURAÇÃO DE WEBHOOK:', {
-        found: !!webhookSettings,
-        raw_value: webhookSettings?.value,
-        error: webhookError?.message
+        encontrado: !!webhookSettings,
+        valor_raw: webhookSettings?.value,
+        erro: webhookError?.message
       });
 
       let webhookUrl = '';
@@ -286,8 +290,8 @@ serve(async (req) => {
 
       console.log('🔗 WEBHOOK URL ENCONTRADA:', webhookUrl);
 
-      // 6. PREPARAR DADOS PARA ENVIO
-      console.log('🔍 6. PREPARANDO DADOS PARA ENVIO...');
+      // 6. PREPARAR DADOS PARA ENVIO VIA send-webhook
+      console.log('🔍 10. PREPARANDO DADOS PARA ENVIO...');
       const webhookData = {
         type: 'whatsapp',
         content: conversionTemplate.content,
@@ -299,14 +303,14 @@ serve(async (req) => {
 
       console.log('📦 DADOS DO WEBHOOK PREPARADOS:', {
         type: webhookData.type,
-        content_preview: webhookData.content.substring(0, 50) + '...',
+        conteúdo_preview: webhookData.content.substring(0, 50) + '...',
         filter_type: webhookData.filter_type,
         filter_value: webhookData.filter_value,
         delivery_code: webhookData.delivery_code
       });
 
-      // 7. CHAMAR FUNÇÃO send-webhook
-      console.log('🚀 7. CHAMANDO FUNÇÃO send-webhook...');
+      // 7. CHAMAR FUNÇÃO send-webhook (igual ao sistema de cadastro automático)
+      console.log('🚀 11. CHAMANDO FUNÇÃO send-webhook...');
       const { data: webhookResponse, error: webhookInvokeError } = await supabase.functions.invoke('send-webhook', {
         body: {
           webhook_url: webhookUrl,
@@ -329,6 +333,7 @@ serve(async (req) => {
       }
 
       console.log('✅ send-webhook CHAMADA COM SUCESSO:', webhookResponse);
+      console.log('🎉 === CONVERSÃO PROCESSADA COM SUCESSO ===');
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -356,7 +361,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('💥 Erro geral no callback:', error);
+    console.error('💥 ERRO GERAL NO CALLBACK:', error);
     return new Response(JSON.stringify({ 
       success: false, 
       error: error.message 
