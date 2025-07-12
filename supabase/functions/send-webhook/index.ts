@@ -88,17 +88,20 @@ serve(async (req) => {
       });
     }
 
-    // Gerar código único de entrega
+    // Gerar código único de entrega se não fornecido
     const deliveryCode = webhook_data.delivery_code || `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    console.log('🆔 Código de entrega gerado:', deliveryCode);
+    console.log('🆔 Código de entrega:', deliveryCode);
 
     let leadsToSend = [];
 
     // Verificar se é conversão automática (filtro específico para um lead)
     if (webhook_data.filter_type === 'automatic_conversion') {
-      console.log('🎯 PROCESSANDO CONVERSÃO AUTOMÁTICA para lead:', webhook_data.filter_value);
+      console.log('🎯 PROCESSANDO CONVERSÃO AUTOMÁTICA para lead ID:', webhook_data.filter_value);
       
-      // Buscar lead específico
+      // Buscar lead específico - garantir que filter_value seja tratado como string
+      const leadId = String(webhook_data.filter_value);
+      console.log('🔍 Buscando lead com ID:', leadId);
+      
       const { data: singleLead, error: leadError } = await supabaseClient
         .from('leads')
         .select(`
@@ -113,14 +116,25 @@ serve(async (req) => {
           events(name),
           lead_statuses(name, color)
         `)
-        .eq('id', webhook_data.filter_value)
+        .eq('id', leadId)
         .single();
 
       if (leadError) {
         console.error('❌ Erro ao buscar lead para conversão:', leadError);
         return new Response(JSON.stringify({
           error: 'Lead not found for conversion',
-          details: leadError.message
+          details: `Lead ID ${leadId} not found: ${leadError.message}`
+        }), { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!singleLead) {
+        console.error('❌ Lead não encontrado:', leadId);
+        return new Response(JSON.stringify({
+          error: 'Lead not found',
+          details: `No lead found with ID ${leadId}`
         }), { 
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -131,7 +145,9 @@ serve(async (req) => {
         console.log('❌ Lead não possui WhatsApp para conversão');
         return new Response(JSON.stringify({
           error: 'Lead has no WhatsApp number',
-          details: 'Cannot send conversion message to lead without WhatsApp'
+          details: 'Cannot send conversion message to lead without WhatsApp',
+          lead_id: leadId,
+          lead_name: singleLead.name
         }), { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -139,9 +155,14 @@ serve(async (req) => {
       }
 
       leadsToSend = [singleLead];
-      console.log('✅ Lead encontrado para conversão:', singleLead.name);
+      console.log('✅ Lead encontrado para conversão:', {
+        id: singleLead.id,
+        name: singleLead.name,
+        whatsapp: singleLead.whatsapp
+      });
     } else {
       // Buscar leads baseado nos filtros normais
+      console.log('🔍 PROCESSANDO FILTROS NORMAIS');
       let query = supabaseClient
         .from('leads')
         .select(`
@@ -159,6 +180,7 @@ serve(async (req) => {
 
       // Aplicar filtros
       if (webhook_data.filter_type && webhook_data.filter_value) {
+        console.log('🎯 Aplicando filtro:', webhook_data.filter_type, '=', webhook_data.filter_value);
         switch (webhook_data.filter_type) {
           case 'course':
             query = query.eq('course_id', webhook_data.filter_value);
@@ -189,6 +211,7 @@ serve(async (req) => {
 
       // Filtrar apenas leads que nunca receberam mensagem se solicitado
       if (webhook_data.send_only_to_new) {
+        console.log('🔍 Filtrando apenas leads novos...');
         const { data: recipientLeadIds, error: recipientsError } = await supabaseClient
           .from('message_recipients')
           .select('lead_id');
@@ -197,7 +220,9 @@ serve(async (req) => {
           console.error('❌ Erro ao buscar recipients:', recipientsError);
         } else {
           const excludeIds = recipientLeadIds?.map(r => r.lead_id) || [];
+          const originalCount = leadsToSend.length;
           leadsToSend = leadsToSend.filter(lead => !excludeIds.includes(lead.id));
+          console.log(`📊 Filtrados ${originalCount - leadsToSend.length} leads que já receberam mensagens`);
         }
       }
     }
@@ -205,17 +230,39 @@ serve(async (req) => {
     console.log(`📊 Total de leads encontrados: ${leadsToSend.length}`);
 
     if (leadsToSend.length === 0) {
+      console.log('ℹ️ Nenhum lead encontrado');
       return new Response(JSON.stringify({
         success: false,
         message: 'Nenhum lead encontrado com os critérios especificados',
-        total_leads: 0
+        total_leads: 0,
+        filter_type: webhook_data.filter_type,
+        filter_value: webhook_data.filter_value
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       });
     }
 
+    // Filtrar apenas leads com WhatsApp se for tipo WhatsApp
+    if (webhook_data.type === 'whatsapp') {
+      const originalCount = leadsToSend.length;
+      leadsToSend = leadsToSend.filter(lead => lead.whatsapp && lead.whatsapp.trim() !== '');
+      console.log(`📱 Filtrados ${leadsToSend.length}/${originalCount} leads com WhatsApp válido`);
+      
+      if (leadsToSend.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'Nenhum lead com WhatsApp válido encontrado',
+          total_leads: 0
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
+    }
+
     // Criar registro no histórico de mensagens
+    console.log('💾 Criando histórico de mensagem...');
     const { data: messageHistory, error: historyError } = await supabaseClient
       .from('message_history')
       .insert({
@@ -223,7 +270,7 @@ serve(async (req) => {
         content: webhook_data.content,
         delivery_code: deliveryCode,
         filter_type: webhook_data.filter_type,
-        filter_value: webhook_data.filter_value,
+        filter_value: webhook_data.filter_value ? String(webhook_data.filter_value) : null,
         recipients_count: leadsToSend.length,
         status: 'sending'
       })
@@ -241,20 +288,27 @@ serve(async (req) => {
       });
     }
 
+    console.log('✅ Histórico criado com ID:', messageHistory.id);
+
     // Criar registros de destinatários
-    const recipients = leadsToSend.map(lead => ({
-      message_history_id: messageHistory.id,
-      lead_id: lead.id,
-      delivery_status: 'pending'
-    }));
+    if (leadsToSend.length > 0) {
+      console.log('👥 Criando registros de destinatários...');
+      const recipients = leadsToSend.map(lead => ({
+        message_history_id: messageHistory.id,
+        lead_id: lead.id,
+        delivery_status: 'pending'
+      }));
 
-    const { error: recipientsError } = await supabaseClient
-      .from('message_recipients')
-      .insert(recipients);
+      const { error: recipientsError } = await supabaseClient
+        .from('message_recipients')
+        .insert(recipients);
 
-    if (recipientsError) {
-      console.error('❌ Erro ao criar recipients:', recipientsError);
-      // Continuar mesmo com erro nos recipients
+      if (recipientsError) {
+        console.error('❌ Erro ao criar recipients:', recipientsError);
+        // Continuar mesmo com erro nos recipients
+      } else {
+        console.log('✅ Recipients criados com sucesso');
+      }
     }
 
     // Preparar dados para envio ao webhook
@@ -282,8 +336,13 @@ serve(async (req) => {
     };
 
     console.log('🚀 ENVIANDO POST PARA URL:', webhook_url);
-    console.log('📦 Total de leads no payload:', dataToSend.leads.length);
-    console.log('📦 Primeiros 3 leads:', dataToSend.leads.slice(0, 3));
+    console.log('📦 Dados do payload:', {
+      message_id: dataToSend.message_id,
+      delivery_code: dataToSend.delivery_code,
+      type: dataToSend.type,
+      total_recipients: dataToSend.total_recipients,
+      leads_count: dataToSend.leads.length
+    });
 
     // Enviar webhook com timeout e headers específicos
     const controller = new AbortController();
