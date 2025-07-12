@@ -39,7 +39,7 @@ export const useMessageSender = (systemSettings: any[]) => {
       const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       console.log('🏷️ Código de entrega gerado:', deliveryCode);
 
-      // Preparar dados do webhook
+      // Preparar dados do webhook - garantir que valores undefined sejam null
       const webhookData = {
         type: 'whatsapp',
         content: data.message,

@@ -108,8 +108,9 @@ serve(async (req) => {
         lead_statuses(name, color)
       `);
 
-    // Aplicar filtros
+    // Aplicar filtros corretamente
     if (webhook_data.filter_type && webhook_data.filter_value) {
+      console.log('🔍 Aplicando filtro:', webhook_data.filter_type, '=', webhook_data.filter_value);
       switch (webhook_data.filter_type) {
         case 'course':
           query = query.eq('course_id', webhook_data.filter_value);
@@ -137,6 +138,7 @@ serve(async (req) => {
     }
 
     let leadsToSend = allLeads || [];
+    console.log(`📊 Total de leads encontrados: ${leadsToSend.length}`);
 
     // Filtrar apenas leads que nunca receberam mensagem se solicitado
     if (webhook_data.send_only_to_new) {
@@ -149,17 +151,17 @@ serve(async (req) => {
       } else {
         const excludeIds = recipientLeadIds?.map(r => r.lead_id) || [];
         leadsToSend = leadsToSend.filter(lead => !excludeIds.includes(lead.id));
+        console.log(`📤 Leads após filtro (apenas novos): ${leadsToSend.length}`);
       }
     }
 
-    console.log(`📊 Total de leads encontrados: ${allLeads?.length || 0}`);
-    console.log(`📤 Leads a serem enviados: ${leadsToSend.length}`);
-
     if (leadsToSend.length === 0) {
+      console.log('⚠️ Nenhum lead encontrado com os critérios especificados');
       return new Response(JSON.stringify({
-        success: false,
+        success: true,
         message: 'Nenhum lead encontrado com os critérios especificados',
-        total_leads: 0
+        total_leads: 0,
+        delivery_code: deliveryCode
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -192,6 +194,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('✅ Histórico de mensagem criado:', messageHistory.id);
+
     // Criar registros de destinatários
     const recipients = leadsToSend.map(lead => ({
       message_history_id: messageHistory.id,
@@ -206,6 +210,8 @@ serve(async (req) => {
     if (recipientsError) {
       console.error('❌ Erro ao criar recipients:', recipientsError);
       // Continuar mesmo com erro nos recipients
+    } else {
+      console.log('✅ Recipients criados:', recipients.length);
     }
 
     // Preparar dados para envio ao webhook
@@ -234,7 +240,6 @@ serve(async (req) => {
 
     console.log('🚀 ENVIANDO POST PARA URL:', webhook_url);
     console.log('📦 Total de leads no payload:', dataToSend.leads.length);
-    console.log('📦 Primeiros 3 leads:', dataToSend.leads.slice(0, 3));
 
     // Enviar webhook com timeout e headers específicos
     const controller = new AbortController();
