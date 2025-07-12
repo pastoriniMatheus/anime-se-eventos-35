@@ -517,7 +517,7 @@ const Leads = () => {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">{lead.event?.name || '-'}</TableCell>
                     <TableCell>
-                      <StatusEditor leadId={lead.id} currentStatusId={lead.status_id} />
+                      <StatusEditor leadId={lead.id} currentStatus={lead.status} />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {lead.receipt_url ? (

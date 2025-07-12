@@ -1,76 +1,90 @@
 
 import React, { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useLeadStatuses, useUpdateLeadStatus } from '@/hooks/useLeads';
-import { Loader2 } from 'lucide-react';
+import { useLeadStatuses } from '@/hooks/useLeads';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface StatusEditorProps {
   leadId: string;
-  currentStatusId?: string;
-  onStatusChanged?: () => void;
+  currentStatus: any;
 }
 
-const StatusEditor = ({ leadId, currentStatusId, onStatusChanged }: StatusEditorProps) => {
-  const [selectedStatusId, setSelectedStatusId] = useState(currentStatusId || '');
-  
-  const { data: statuses = [] } = useLeadStatuses();
-  const updateStatus = useUpdateLeadStatus();
+const StatusEditor = ({ leadId, currentStatus }: StatusEditorProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const { data: leadStatuses = [] } = useLeadStatuses();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const handleUpdateStatus = async () => {
-    if (!selectedStatusId) return;
-    
-    console.log('🔄 Iniciando atualização de status via StatusEditor');
-    
+  const handleStatusChange = async (newStatusId: string) => {
     try {
-      await updateStatus.mutateAsync({
-        leadId,
-        statusId: selectedStatusId
+      const { error } = await supabase
+        .from('leads')
+        .update({ status_id: newStatusId })
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      setIsEditing(false);
+
+      toast({
+        title: "Status atualizado",
+        description: "Status do lead atualizado com sucesso!",
       });
-      
-      if (onStatusChanged) {
-        onStatusChanged();
-      }
-    } catch (error) {
-      console.error('❌ Erro na atualização:', error);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar status",
+        variant: "destructive",
+      });
     }
   };
 
-  return (
-    <div className="space-y-2">
-      <div className="space-y-1">
-        <Label htmlFor="status-select" className="text-xs">Status</Label>
-        <Select value={selectedStatusId} onValueChange={setSelectedStatusId}>
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue placeholder="Selecione um status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statuses.map((status: any) => (
-              <SelectItem key={status.id} value={status.id}>
-                <div className="flex items-center space-x-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: status.color }}
-                  />
-                  <span>{status.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button 
-        onClick={handleUpdateStatus} 
-        disabled={!selectedStatusId || selectedStatusId === currentStatusId || updateStatus.isPending}
-        className="w-full h-8 text-sm"
-        size="sm"
+  if (isEditing) {
+    return (
+      <Select 
+        value={currentStatus?.id || ""} 
+        onValueChange={handleStatusChange}
+        onOpenChange={(open) => {
+          if (!open) setIsEditing(false);
+        }}
+        defaultOpen={true}
       >
-        {updateStatus.isPending && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
-        Atualizar Status
-      </Button>
-    </div>
+        <SelectTrigger className="w-32">
+          <SelectValue placeholder="Selecione..." />
+        </SelectTrigger>
+        <SelectContent>
+          {leadStatuses.map((status: any) => (
+            <SelectItem key={status.id} value={status.id}>
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: status.color }}
+                />
+                {status.name}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <Badge 
+      style={{ 
+        backgroundColor: currentStatus?.color || '#f59e0b', 
+        color: 'white',
+        cursor: 'pointer'
+      }}
+      className="hover:opacity-80 transition-opacity"
+      onClick={() => setIsEditing(true)}
+    >
+      {currentStatus?.name || 'Sem status'}
+    </Badge>
   );
 };
 
