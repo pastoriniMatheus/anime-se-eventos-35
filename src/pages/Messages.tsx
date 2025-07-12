@@ -10,6 +10,7 @@ import MessageRecipientsModal from '@/components/MessageRecipientsModal';
 import MessageMetrics from '@/components/MessageMetrics';
 import { Layout } from '@/components/Layout';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { MessageSquare, Send, History, FileText, Users, Settings } from 'lucide-react';
 
 const Messages = () => {
   const [loadedTemplate, setLoadedTemplate] = useState<any>(null);
@@ -37,7 +38,6 @@ const Messages = () => {
     setSelectedMessage(null);
   };
 
-  // Buscar URL do webhook WhatsApp
   const getWebhookUrl = () => {
     const webhookSettings = systemSettings.find(s => s.key === 'webhook_urls');
     if (webhookSettings?.value) {
@@ -55,23 +55,43 @@ const Messages = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mensagens</h1>
-          <p className="text-muted-foreground">
-            Gerencie e envie mensagens para seus leads
-          </p>
+        <div className="bg-gradient-to-r from-primary to-secondary rounded-lg p-6 text-primary-foreground">
+          <div className="flex items-center space-x-3">
+            <MessageSquare className="h-8 w-8" />
+            <div>
+              <h1 className="text-3xl font-bold">Mensagens</h1>
+              <p className="text-primary-foreground/80">
+                Gerencie e envie mensagens para seus leads
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Métricas */}
         <MessageMetrics />
 
         <Tabs defaultValue="composer" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="composer">Enviar</TabsTrigger>
-            <TabsTrigger value="history">Histórico</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="contacts">Contatos</TabsTrigger>
-            <TabsTrigger value="webhook">Webhook</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 bg-card">
+            <TabsTrigger value="composer" className="flex items-center space-x-2">
+              <Send className="h-4 w-4" />
+              <span className="hidden sm:inline">Enviar</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center space-x-2">
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Histórico</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Templates</span>
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Contatos</span>
+            </TabsTrigger>
+            <TabsTrigger value="webhook" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Webhook</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="composer" className="space-y-4">
