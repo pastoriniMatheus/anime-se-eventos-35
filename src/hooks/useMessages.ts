@@ -33,12 +33,18 @@ export const useMessages = () => {
       }
       
       console.log('📋 Mensagens encontradas:', data?.length || 0);
-      console.log('📋 Tipos de mensagens:', data?.map(m => ({ id: m.id, filter_type: m.filter_type, type: m.type })) || []);
+      console.log('📋 Detalhes das mensagens:', data?.map(m => ({ 
+        id: m.id, 
+        filter_type: m.filter_type, 
+        type: m.type,
+        status: m.status,
+        content: m.content?.substring(0, 50) + '...'
+      })) || []);
       
       return data || [];
     },
-    staleTime: 30 * 1000, // 30 segundos
-    refetchInterval: 60 * 1000, // Refetch a cada 1 minuto
+    staleTime: 15 * 1000, // 15 segundos
+    refetchInterval: 30 * 1000, // Refetch a cada 30 segundos
   });
 };
 

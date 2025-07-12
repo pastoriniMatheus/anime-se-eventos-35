@@ -15,8 +15,8 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
   const { data: messages = [], isLoading: messagesLoading } = useMessages();
   const clearHistoryMutation = useClearMessageHistory();
 
-  console.log('📋 Mensagens carregadas no componente:', messages.length);
-  console.log('📋 Tipos de filtro encontrados:', [...new Set(messages.map((m: any) => m.filter_type))]);
+  console.log('📋 COMPONENTE - Mensagens carregadas:', messages.length);
+  console.log('📋 COMPONENTE - Tipos de filtro encontrados:', [...new Set(messages.map((m: any) => m.filter_type))]);
 
   // Separar mensagens automáticas das manuais
   const automaticMessages = messages.filter((msg: any) => 
@@ -29,8 +29,14 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
     msg.filter_type !== 'automatic_conversion'
   );
 
-  console.log('🤖 Mensagens automáticas:', automaticMessages.length);
-  console.log('👤 Mensagens manuais:', manualMessages.length);
+  console.log('🤖 COMPONENTE - Mensagens automáticas:', automaticMessages.length);
+  console.log('👤 COMPONENTE - Mensagens manuais:', manualMessages.length);
+  console.log('🔍 COMPONENTE - Automáticas detalhadas:', automaticMessages.map(m => ({
+    id: m.id,
+    filter_type: m.filter_type,
+    status: m.status,
+    sent_at: m.sent_at
+  })));
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -120,7 +126,7 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
               {msg.filter_type && (
                 <div className="text-xs text-gray-500">
                   Filtro: {getMessageTypeLabel(msg.filter_type)}
-                  {msg.filter_value && ` - ID: ${msg.filter_value}`}
+                  {msg.filter_value && ` - Lead ID: ${msg.filter_value}`}
                 </div>
               )}
               {msg.delivery_code && (
