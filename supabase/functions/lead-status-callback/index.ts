@@ -189,198 +189,52 @@ serve(async (req) => {
             } else {
               console.log('📱 LEAD TEM WHATSAPP:', updatedLead.whatsapp);
               
-              // 5. BUSCAR WEBHOOK URL
-              const { data: webhookSetting, error: webhookError } = await supabase
+              // 5. USAR A MESMA FUNÇÃO send-webhook QUE O SISTEMA DE CADASTRO USA
+              console.log('🚀 CHAMANDO send-webhook PARA CONVERSÃO');
+
+              const webhookData = {
+                type: 'whatsapp',
+                content: conversionTemplate.content,
+                filter_type: 'automatic_conversion',
+                filter_value: lead_id.toString(),
+                send_only_to_new: false,
+                delivery_code: `CONV-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+              };
+
+              // Buscar configuração de webhook
+              const { data: webhookSettings } = await supabase
                 .from('system_settings')
                 .select('value')
                 .eq('key', 'webhook_urls')
                 .single();
 
-              console.log('🌐 WEBHOOK SETTINGS:', {
-                found: !!webhookSetting,
-                has_value: !!webhookSetting?.value,
-                error: webhookError?.message
-              });
-
-              if (!webhookSetting?.value) {
-                console.log('❌ WEBHOOK_URLS NÃO CONFIGURADO');
-              } else {
-                let whatsappWebhookUrl;
+              let webhookUrl = '';
+              if (webhookSettings?.value) {
                 try {
-                  const webhookUrls = typeof webhookSetting.value === 'string' 
-                    ? JSON.parse(webhookSetting.value) 
-                    : webhookSetting.value;
-                  whatsappWebhookUrl = webhookUrls?.whatsapp;
-                  console.log('🔗 WEBHOOK URL EXTRAÍDA:', whatsappWebhookUrl);
-                } catch (parseError) {
-                  console.error('❌ ERRO AO PARSEAR WEBHOOK_URLS:', parseError);
-                  whatsappWebhookUrl = null;
+                  const urls = JSON.parse(webhookSettings.value);
+                  webhookUrl = urls.whatsapp || '';
+                } catch (error) {
+                  console.error('❌ Erro ao parsear webhook URLs:', error);
                 }
+              }
 
-                if (whatsappWebhookUrl) {
-                  // 6. GERAR CÓDIGO DE ENTREGA ÚNICO
-                  const deliveryCode = `CONV-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-                  console.log('🏷️ CÓDIGO DE ENTREGA GERADO:', deliveryCode);
+              if (!webhookUrl) {
+                console.log('❌ URL DO WEBHOOK WHATSAPP NÃO ENCONTRADA');
+              } else {
+                console.log('🔗 WEBHOOK URL ENCONTRADA:', webhookUrl);
 
-                  // 7. CRIAR HISTÓRICO DE MENSAGEM
-                  const { data: messageHistory, error: historyError } = await supabase
-                    .from('message_history')
-                    .insert({
-                      type: 'whatsapp',
-                      content: conversionTemplate.content,
-                      delivery_code: deliveryCode,
-                      filter_type: 'automatic_conversion',
-                      filter_value: lead_id.toString(),
-                      recipients_count: 1,
-                      status: 'sending'
-                    })
-                    .select()
-                    .single();
-
-                  console.log('📋 HISTÓRICO DE MENSAGEM CRIADO:', {
-                    created: !!messageHistory,
-                    message_id: messageHistory?.id,
-                    delivery_code: deliveryCode,
-                    error: historyError?.message
-                  });
-
-                  if (messageHistory) {
-                    // 8. CRIAR RECIPIENT
-                    const { data: recipient, error: recipientError } = await supabase
-                      .from('message_recipients')
-                      .insert({
-                        message_history_id: messageHistory.id,
-                        lead_id: lead_id,
-                        delivery_status: 'pending'
-                      })
-                      .select()
-                      .single();
-
-                    console.log('👤 RECIPIENT CRIADO:', {
-                      created: !!recipient,
-                      recipient_id: recipient?.id,
-                      error: recipientError?.message
-                    });
-
-                    // 9. PREPARAR PAYLOAD PADRONIZADO
-                    const webhookPayload = {
-                      type: "whatsapp",
-                      content: conversionTemplate.content,
-                      filter_type: "automatic_conversion",
-                      filter_value: lead_id.toString(),
-                      send_only_to_new: false,
-                      total_recipients: 1,
-                      leads: [{
-                        id: updatedLead.id,
-                        name: updatedLead.name,
-                        email: updatedLead.email,
-                        whatsapp: updatedLead.whatsapp,
-                        course: updatedLead.course?.name || updatedLead.postgraduate_course?.name || null,
-                        event: updatedLead.event?.name || null,
-                        status: updatedLead.status?.name || null,
-                        status_color: updatedLead.status?.color || null
-                      }],
-                      timestamp: new Date().toISOString(),
-                      callback_url: `https://iznfrkdsmbtynmifqcdd.supabase.co/functions/v1/message-delivery-webhook-endpoint`,
-                      message_id: messageHistory.id,
-                      delivery_code: deliveryCode
-                    };
-
-                    console.log('📦 PAYLOAD DE CONVERSÃO CRIADO:', {
-                      lead_name: webhookPayload.leads[0].name,
-                      delivery_code: deliveryCode,
-                      webhook_url: whatsappWebhookUrl,
-                      payload_size: JSON.stringify(webhookPayload).length
-                    });
-
-                    // 10. ENVIAR WEBHOOK
-                    try {
-                      console.log('🚀 ENVIANDO WEBHOOK DE CONVERSÃO PARA:', whatsappWebhookUrl);
-                      
-                      const webhookResponse = await fetch(whatsappWebhookUrl, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Accept': 'application/json',
-                          'User-Agent': 'Supabase-Conversion-Message/1.0',
-                          'X-Lead-ID': lead_id.toString(),
-                          'X-Delivery-Code': deliveryCode
-                        },
-                        body: JSON.stringify(webhookPayload)
-                      });
-
-                      const responseText = await webhookResponse.text();
-                      console.log('📨 RESPOSTA DO WEBHOOK DE CONVERSÃO:', {
-                        status: webhookResponse.status,
-                        ok: webhookResponse.ok,
-                        response_body: responseText.substring(0, 500),
-                        url: whatsappWebhookUrl
-                      });
-
-                      // 11. ATUALIZAR STATUS
-                      const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
-                      
-                      const { error: updateHistoryError } = await supabase
-                        .from('message_history')
-                        .update({ 
-                          status: finalStatus,
-                          webhook_response: `${webhookResponse.status}: ${responseText}`.substring(0, 1000)
-                        })
-                        .eq('id', messageHistory.id);
-
-                      console.log('📝 HISTÓRICO ATUALIZADO:', {
-                        status: finalStatus,
-                        message_id: messageHistory.id,
-                        error: updateHistoryError?.message
-                      });
-
-                      const { error: updateRecipientError } = await supabase
-                        .from('message_recipients')
-                        .update({ 
-                          delivery_status: webhookResponse.ok ? 'sent' : 'failed',
-                          sent_at: webhookResponse.ok ? new Date().toISOString() : null,
-                          error_message: webhookResponse.ok ? null : `${webhookResponse.status}: ${responseText}`.substring(0, 500)
-                        })
-                        .eq('message_history_id', messageHistory.id)
-                        .eq('lead_id', lead_id);
-
-                      console.log('👤 RECIPIENT ATUALIZADO:', {
-                        status: webhookResponse.ok ? 'sent' : 'failed',
-                        recipient_id: recipient?.id,
-                        error: updateRecipientError?.message
-                      });
-
-                      if (webhookResponse.ok) {
-                        console.log('🎉 WEBHOOK DE CONVERSÃO ENVIADO COM SUCESSO!');
-                      } else {
-                        console.log('❌ FALHA NO WEBHOOK DE CONVERSÃO:', webhookResponse.status);
-                      }
-                    } catch (fetchError) {
-                      console.error('💥 ERRO AO FAZER FETCH DO WEBHOOK:', fetchError);
-                      
-                      // Atualizar status como failed
-                      await supabase
-                        .from('message_history')
-                        .update({ 
-                          status: 'failed',
-                          webhook_response: `Fetch error: ${fetchError.message}` 
-                        })
-                        .eq('id', messageHistory.id);
-
-                      await supabase
-                        .from('message_recipients')
-                        .update({ 
-                          delivery_status: 'failed',
-                          error_message: `Fetch error: ${fetchError.message}`
-                        })
-                        .eq('message_history_id', messageHistory.id)
-                        .eq('lead_id', lead_id);
-                    }
-                  } else {
-                    console.log('❌ FALHA AO CRIAR HISTÓRICO DE MENSAGEM:', historyError);
+                // Chamar a função send-webhook (mesma que o sistema de cadastro usa)
+                const { data: webhookResponse, error: webhookError } = await supabase.functions.invoke('send-webhook', {
+                  body: {
+                    webhook_url: webhookUrl,
+                    webhook_data: webhookData
                   }
+                });
+
+                if (webhookError) {
+                  console.error('❌ ERRO AO CHAMAR send-webhook:', webhookError);
                 } else {
-                  console.log('❌ URL DO WEBHOOK WHATSAPP NÃO ENCONTRADA');
+                  console.log('✅ send-webhook CHAMADA COM SUCESSO:', webhookResponse);
                 }
               }
             }
