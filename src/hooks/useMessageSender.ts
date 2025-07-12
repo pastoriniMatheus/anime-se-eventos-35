@@ -39,12 +39,12 @@ export const useMessageSender = (systemSettings: any[]) => {
       const deliveryCode = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       console.log('🏷️ Código de entrega gerado:', deliveryCode);
 
-      // Preparar dados do webhook - garantir que valores undefined sejam null
+      // Preparar dados do webhook
       const webhookData = {
         type: 'whatsapp',
         content: data.message,
-        filter_type: data.filterType || null,
-        filter_value: data.filterValue || null,
+        filter_type: data.filterType === 'all' ? null : data.filterType,
+        filter_value: data.filterType === 'all' ? null : data.filterValue,
         send_only_to_new: data.sendOnlyToNew,
         delivery_code: deliveryCode,
         callback_url: `https://iznfrkdsmbtynmifqcdd.supabase.co/functions/v1/message-delivery-webhook-endpoint`,
@@ -107,8 +107,8 @@ export const useMessageSender = (systemSettings: any[]) => {
     try {
       await sendMessageMutation.mutateAsync({
         message: message.trim(),
-        filterType: (filterType === 'all') ? undefined : filterType,
-        filterValue: filterValue || undefined,
+        filterType: filterType,
+        filterValue: filterValue,
         sendOnlyToNew
       });
       onSuccess();
