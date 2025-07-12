@@ -52,6 +52,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('📊 Status encontrado:', { status_id: status.id, status_name });
+
     // Verificar se o lead existe e buscar status anterior
     const { data: existingLead, error: leadError } = await supabase
       .from('leads')
@@ -74,7 +76,7 @@ serve(async (req) => {
     }
 
     const previousStatusId = existingLead.status_id;
-    console.log('📊 Status anterior:', previousStatusId, 'Status novo:', status.id);
+    console.log('🔍 Status anterior:', previousStatusId, 'Status novo:', status.id);
 
     // Atualizar o status do lead
     const updateData: any = {

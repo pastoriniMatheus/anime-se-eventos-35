@@ -110,7 +110,8 @@ const MessageHistory = ({ onViewRecipients }: MessageHistoryProps) => {
               </div>
               {msg.filter_type && (
                 <div className="text-xs text-gray-500">
-                  Filtro: {msg.filter_type} - {msg.filter_value}
+                  Filtro: {getMessageTypeLabel(msg.filter_type)}
+                  {msg.filter_value && ` - ID: ${msg.filter_value}`}
                 </div>
               )}
             </div>

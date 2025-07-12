@@ -1,1 +1,82 @@
+
+# The local development settings
 project_id = "iznfrkdsmbtynmifqcdd"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[graphql]
+enabled = true
+port = 54329
+
+[inbound_smtp]
+enabled = false
+port = 54330
+smtp_user = "supabase"
+smtp_pass = "supabase"
+
+[db]
+enabled = true
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+port = 54324
+
+[edge_runtime]
+enabled = true
+port = 54325
+
+[analytics]
+enabled = false
+port = 54327
+
+[functions.lead-capture]
+verify_jwt = false
+
+[functions.qr-redirect]
+verify_jwt = false
+
+[functions.message-delivery-webhook-endpoint]
+verify_jwt = false
+
+[functions.lead-status-callback]
+verify_jwt = false
+
+[functions.message-delivery-webhook]
+verify_jwt = false
+
+[functions.message-delivery-proxy]
+verify_jwt = false
+
+[functions.send-webhook]
+verify_jwt = false
+
+[functions.validate-whatsapp]
+verify_jwt = false
+
+[functions.whatsapp-validation-callback]
+verify_jwt = false
+
+[functions.generate-event-report]
+verify_jwt = false
+
+[functions.database-export]
+verify_jwt = false
+
+[functions.database-import]
+verify_jwt = false
+
+[functions.database-installer]
+verify_jwt = false
+
+[functions.sync-leads]
+verify_jwt = false
