@@ -125,6 +125,7 @@ serve(async (req) => {
         console.log('🤖 CONFIGURAÇÃO CONVERSÃO MESSAGE:', {
           found: !!conversionMessageSetting,
           raw_value: conversionMessageSetting?.value,
+          enabled: conversionMessageSetting?.value === 'true',
           error: conversionSettingError?.message
         });
 
@@ -192,6 +193,7 @@ serve(async (req) => {
                 console.log('📝 TEMPLATE DE CONVERSÃO:', {
                   found: !!conversionTemplate,
                   template_name: conversionTemplate?.name,
+                  template_id: conversionTemplate?.id,
                   error: templateError?.message
                 });
 
@@ -204,6 +206,8 @@ serve(async (req) => {
                   if (!updatedLead.whatsapp) {
                     console.log('❌ LEAD NÃO TEM WHATSAPP, PULANDO ENVIO');
                   } else {
+                    console.log('📱 LEAD TEM WHATSAPP:', updatedLead.whatsapp);
+                    
                     // 6. GERAR CÓDIGO DE ENTREGA
                     const deliveryCode = `CONV-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
@@ -272,11 +276,14 @@ serve(async (req) => {
                       console.log('📦 PAYLOAD DE CONVERSÃO CRIADO:', {
                         lead_name: webhookPayload.leads[0].name,
                         delivery_code: deliveryCode,
-                        webhook_url: whatsappWebhookUrl
+                        webhook_url: whatsappWebhookUrl,
+                        payload: JSON.stringify(webhookPayload, null, 2)
                       });
 
                       // 10. ENVIAR WEBHOOK
                       try {
+                        console.log('🚀 ENVIANDO WEBHOOK DE CONVERSÃO...');
+                        
                         const webhookResponse = await fetch(whatsappWebhookUrl, {
                           method: 'POST',
                           headers: {
@@ -351,7 +358,7 @@ serve(async (req) => {
               }
             }
           } else {
-            console.log('ℹ️ Status alterado, mas não é conversão');
+            console.log('ℹ️ Status alterado, mas não é conversão. Status de conversão configurado:', conversionStatusSetting?.value, 'Status atual:', status.id);
           }
         }
       } catch (conversionError) {
