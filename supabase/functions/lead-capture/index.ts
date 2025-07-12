@@ -169,7 +169,7 @@ serve(async (req) => {
       }
     }
 
-    // ============= VERIFICANDO ENVIO AUTOMÁTICO =============
+    // ============= VERIFICAÇÃO DE ENVIO AUTOMÁTICO =============
     console.log('🤖 === INICIANDO VERIFICAÇÃO DE ENVIO AUTOMÁTICO ===');
     
     try {
@@ -177,18 +177,18 @@ serve(async (req) => {
       console.log('🔍 PASSO 1: Verificando se envio automático está habilitado...');
       const { data: autoSettings, error: autoError } = await supabase
         .from('system_settings')
-        .select('*')
-        .eq('key', 'auto_message_enabled');
+        .select('value')
+        .eq('key', 'auto_message_enabled')
+        .single();
 
-      console.log('📊 Resultado busca auto_message_enabled:', {
-        found: !!autoSettings?.length,
-        count: autoSettings?.length || 0,
-        data: autoSettings,
+      console.log('📊 AUTO_MESSAGE_ENABLED encontrado:', {
+        found: !!autoSettings,
+        value: autoSettings?.value,
         error: autoError?.message
       });
 
-      if (!autoSettings?.length || autoSettings[0]?.value !== 'true') {
-        console.log('🔕 ENVIO AUTOMÁTICO DESABILITADO - Finalizando');
+      if (!autoSettings || autoSettings.value !== 'true') {
+        console.log('🔕 ENVIO AUTOMÁTICO DESABILITADO');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
@@ -207,16 +207,20 @@ serve(async (req) => {
       const { data: templates, error: templateError } = await supabase
         .from('message_templates')
         .select('*')
-        .eq('is_default', true);
+        .eq('is_default', true)
+        .single();
 
-      console.log('📄 Resultado busca template padrão:', {
-        found: !!templates?.length,
-        count: templates?.length || 0,
-        templates: templates?.map(t => ({ id: t.id, name: t.name, is_default: t.is_default })),
+      console.log('📄 TEMPLATE PADRÃO:', {
+        found: !!templates,
+        template: templates ? {
+          id: templates.id,
+          name: templates.name,
+          content_preview: templates.content?.substring(0, 100) + '...'
+        } : null,
         error: templateError?.message
       });
 
-      if (!templates?.length) {
+      if (!templates) {
         console.log('❌ NENHUM TEMPLATE PADRÃO ENCONTRADO');
         return new Response(JSON.stringify({ 
           success: true, 
@@ -229,27 +233,22 @@ serve(async (req) => {
         });
       }
 
-      const defaultTemplate = templates[0];
-      console.log('✅ TEMPLATE PADRÃO ENCONTRADO:', {
-        id: defaultTemplate.id,
-        name: defaultTemplate.name,
-        content_preview: defaultTemplate.content?.substring(0, 50) + '...'
-      });
-
       // 3. BUSCAR WEBHOOK WHATSAPP
-      console.log('🔍 PASSO 3: Buscando configuração de webhook WhatsApp...');
+      console.log('🔍 PASSO 3: Buscando configurações de webhook...');
       const { data: webhookSettings, error: webhookError } = await supabase
         .from('system_settings')
-        .select('*')
-        .eq('key', 'webhook_urls');
+        .select('value')
+        .eq('key', 'webhook_urls')
+        .single();
 
-      console.log('🌐 Resultado busca webhook_urls:', {
-        found: !!webhookSettings?.length,
-        data: webhookSettings,
+      console.log('🌐 WEBHOOK_URLS RAW:', {
+        found: !!webhookSettings,
+        raw_value: webhookSettings?.value,
+        type: typeof webhookSettings?.value,
         error: webhookError?.message
       });
 
-      if (!webhookSettings?.length || !webhookSettings[0]?.value) {
+      if (!webhookSettings?.value) {
         console.log('❌ CONFIGURAÇÃO WEBHOOK NÃO ENCONTRADA');
         return new Response(JSON.stringify({ 
           success: true, 
@@ -266,16 +265,19 @@ serve(async (req) => {
       let whatsappWebhookUrl;
       
       try {
-        const webhookValue = webhookSettings[0].value;
-        console.log('📋 Valor raw do webhook:', webhookValue);
+        // Parse do JSON das URLs
+        if (typeof webhookSettings.value === 'string') {
+          webhookUrls = JSON.parse(webhookSettings.value);
+        } else {
+          webhookUrls = webhookSettings.value;
+        }
         
-        webhookUrls = typeof webhookValue === 'string' ? JSON.parse(webhookValue) : webhookValue;
         whatsappWebhookUrl = webhookUrls?.whatsapp;
         
-        console.log('🔗 URLs parseadas:', {
-          whatsapp: whatsappWebhookUrl,
-          has_whatsapp: !!whatsappWebhookUrl,
-          all_keys: Object.keys(webhookUrls || {})
+        console.log('🔗 WEBHOOK URLS PARSEADAS:', {
+          all_urls: webhookUrls,
+          whatsapp_url: whatsappWebhookUrl,
+          has_whatsapp: !!whatsappWebhookUrl
         });
         
       } catch (parseError) {
@@ -284,7 +286,11 @@ serve(async (req) => {
           success: true, 
           leadId: lead.id,
           message: 'Lead criado! (Erro na configuração do webhook)',
-          auto_send_status: 'webhook_parse_error'
+          auto_send_status: 'webhook_parse_error',
+          debug_info: {
+            raw_value: webhookSettings.value,
+            parse_error: parseError.message
+          }
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -292,25 +298,27 @@ serve(async (req) => {
       }
       
       if (!whatsappWebhookUrl || whatsappWebhookUrl.trim() === '') {
-        console.log('❌ URL WEBHOOK WHATSAPP VAZIA');
+        console.log('❌ URL WEBHOOK WHATSAPP VAZIA OU INVÁLIDA');
         return new Response(JSON.stringify({ 
           success: true, 
           leadId: lead.id,
           message: 'Lead criado! (URL do webhook WhatsApp não configurada)',
-          auto_send_status: 'empty_webhook_url'
+          auto_send_status: 'empty_webhook_url',
+          debug_info: {
+            webhook_urls: webhookUrls,
+            whatsapp_url: whatsappWebhookUrl
+          }
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      console.log('✅ WEBHOOK WHATSAPP CONFIGURADO:', whatsappWebhookUrl);
+      console.log('✅ WEBHOOK WHATSAPP ENCONTRADO:', whatsappWebhookUrl);
 
       // 4. PREPARAR ENVIO
-      console.log('🚀 PASSO 4: Preparando envio automático...');
-      
       const deliveryCode = `AUTO-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      console.log('🆔 Código de entrega:', deliveryCode);
+      console.log('🆔 Código de entrega gerado:', deliveryCode);
       
       // 5. CRIAR HISTÓRICO
       console.log('📝 PASSO 5: Criando histórico da mensagem...');
@@ -318,7 +326,7 @@ serve(async (req) => {
         .from('message_history')
         .insert({
           type: 'whatsapp',
-          content: defaultTemplate.content,
+          content: templates.content,
           delivery_code: deliveryCode,
           filter_type: 'auto_new_lead',
           filter_value: lead.id,
@@ -363,34 +371,30 @@ serve(async (req) => {
       console.log('📦 PASSO 7: Preparando payload para webhook...');
       const webhookPayload = {
         phone: lead.whatsapp,
-        message: defaultTemplate.content,
+        message: templates.content,
         lead_id: lead.id,
         lead_name: lead.name,
         delivery_code: deliveryCode,
-        template_name: defaultTemplate.name,
+        template_name: templates.name,
         timestamp: new Date().toISOString()
       };
 
       console.log('📤 PAYLOAD PREPARADO:', {
         phone: webhookPayload.phone,
-        message_preview: webhookPayload.message?.substring(0, 50) + '...',
+        message_length: webhookPayload.message?.length,
         lead_id: webhookPayload.lead_id,
         delivery_code: webhookPayload.delivery_code
       });
 
       // 8. ENVIAR WEBHOOK
-      console.log('🌐 PASSO 8: ENVIANDO WEBHOOK...');
-      console.log('🎯 URL de destino:', whatsappWebhookUrl);
+      console.log('🌐 PASSO 8: ENVIANDO WEBHOOK PARA:', whatsappWebhookUrl);
       
       const webhookResponse = await fetch(whatsappWebhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'Supabase-Auto-Message/1.0',
-          'X-Source': 'lead-capture-auto',
-          'X-Lead-ID': lead.id,
-          'X-Delivery-Code': deliveryCode
+          'User-Agent': 'Supabase-Auto-Message/1.0'
         },
         body: JSON.stringify(webhookPayload)
       });
@@ -401,42 +405,31 @@ serve(async (req) => {
         status: webhookResponse.status,
         statusText: webhookResponse.statusText,
         ok: webhookResponse.ok,
-        response_preview: responseText.substring(0, 200),
-        response_size: responseText.length
+        response: responseText
       });
 
       // 9. ATUALIZAR STATUS
       const finalStatus = webhookResponse.ok ? 'sent' : 'failed';
       
-      console.log('📊 ATUALIZANDO STATUS PARA:', finalStatus);
-      
-      const { error: updateError } = await supabase
+      await supabase
         .from('message_history')
         .update({ 
           status: finalStatus,
-          webhook_response: `${webhookResponse.status}: ${responseText.substring(0, 500)}` 
+          webhook_response: `${webhookResponse.status}: ${responseText}` 
         })
         .eq('id', messageHistory.id);
 
-      if (updateError) {
-        console.error('⚠️ Erro ao atualizar histórico:', updateError);
-      }
-
       // Atualizar recipient
       const recipientStatus = webhookResponse.ok ? 'sent' : 'failed';
-      const { error: recipientUpdateError } = await supabase
+      await supabase
         .from('message_recipients')
         .update({ 
           delivery_status: recipientStatus,
           sent_at: webhookResponse.ok ? new Date().toISOString() : null,
-          error_message: webhookResponse.ok ? null : `${webhookResponse.status}: ${responseText.substring(0, 200)}`
+          error_message: webhookResponse.ok ? null : `${webhookResponse.status}: ${responseText}`
         })
         .eq('message_history_id', messageHistory.id)
         .eq('lead_id', lead.id);
-
-      if (recipientUpdateError) {
-        console.error('⚠️ Erro ao atualizar recipient:', recipientUpdateError);
-      }
 
       if (webhookResponse.ok) {
         console.log('🎉 WEBHOOK ENVIADO COM SUCESSO!');
@@ -446,6 +439,7 @@ serve(async (req) => {
           message: 'Lead criado e mensagem automática enviada com sucesso!',
           auto_send_status: 'sent',
           delivery_code: deliveryCode,
+          webhook_url: whatsappWebhookUrl,
           webhook_status: webhookResponse.status
         }), {
           status: 200,
@@ -459,8 +453,9 @@ serve(async (req) => {
           message: 'Lead criado, mas houve erro no envio da mensagem',
           auto_send_status: 'failed',
           delivery_code: deliveryCode,
+          webhook_url: whatsappWebhookUrl,
           webhook_status: webhookResponse.status,
-          webhook_error: responseText.substring(0, 200)
+          webhook_error: responseText
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
