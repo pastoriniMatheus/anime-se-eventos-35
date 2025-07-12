@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -367,6 +366,7 @@ serve(async (req) => {
       }
 
       // Preparar dados para envio ao webhook
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const dataToSend = {
         message_id: messageHistory.id,
         delivery_code: deliveryCode,
@@ -387,10 +387,17 @@ serve(async (req) => {
           status_color: lead.lead_statuses?.color || null
         })),
         timestamp: new Date().toISOString(),
-        callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/message-delivery-webhook-endpoint`
+        // URLs de callback para o webhook
+        callback_urls: {
+          message_delivery: `${supabaseUrl}/functions/v1/message-delivery-webhook-endpoint`,
+          whatsapp_validation: `${supabaseUrl}/functions/v1/whatsapp-validation-callback`
+        },
+        // URL de callback principal (compatibilidade)
+        callback_url: `${supabaseUrl}/functions/v1/message-delivery-webhook-endpoint`
       };
 
       console.log('🚀 ENVIANDO POST PARA URL:', webhook_url);
+      console.log('📦 URLs de callback incluídas:', dataToSend.callback_urls);
       console.log('📦 Dados do payload:', {
         message_id: dataToSend.message_id,
         delivery_code: dataToSend.delivery_code,
@@ -507,7 +514,7 @@ serve(async (req) => {
           delivery_code: deliveryCode,
           message_id: messageHistory.id,
           total_leads_sent: leadsToSend.length,
-          callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/message-delivery-webhook-endpoint`
+          callback_urls: dataToSend.callback_urls
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
