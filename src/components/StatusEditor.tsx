@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useLeadStatuses, useUpdateLeadStatus } from '@/hooks/useLeads';
 import { Loader2 } from 'lucide-react';
@@ -15,7 +14,6 @@ interface StatusEditorProps {
 
 const StatusEditor = ({ leadId, currentStatusId, onStatusChanged }: StatusEditorProps) => {
   const [selectedStatusId, setSelectedStatusId] = useState(currentStatusId || '');
-  const [notes, setNotes] = useState('');
   
   const { data: statuses = [] } = useLeadStatuses();
   const updateStatus = useUpdateLeadStatus();
@@ -28,11 +26,9 @@ const StatusEditor = ({ leadId, currentStatusId, onStatusChanged }: StatusEditor
     try {
       await updateStatus.mutateAsync({
         leadId,
-        statusId: selectedStatusId,
-        notes: notes.trim() || undefined
+        statusId: selectedStatusId
       });
       
-      setNotes('');
       if (onStatusChanged) {
         onStatusChanged();
       }
@@ -42,11 +38,11 @@ const StatusEditor = ({ leadId, currentStatusId, onStatusChanged }: StatusEditor
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="status-select">Status</Label>
+    <div className="space-y-2">
+      <div className="space-y-1">
+        <Label htmlFor="status-select" className="text-xs">Status</Label>
         <Select value={selectedStatusId} onValueChange={setSelectedStatusId}>
-          <SelectTrigger>
+          <SelectTrigger className="h-8 text-sm">
             <SelectValue placeholder="Selecione um status" />
           </SelectTrigger>
           <SelectContent>
@@ -65,23 +61,13 @@ const StatusEditor = ({ leadId, currentStatusId, onStatusChanged }: StatusEditor
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="notes">Observações (opcional)</Label>
-        <Textarea
-          id="notes"
-          placeholder="Adicione observações sobre a mudança de status..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-        />
-      </div>
-
       <Button 
         onClick={handleUpdateStatus} 
         disabled={!selectedStatusId || selectedStatusId === currentStatusId || updateStatus.isPending}
-        className="w-full"
+        className="w-full h-8 text-sm"
+        size="sm"
       >
-        {updateStatus.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        {updateStatus.isPending && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
         Atualizar Status
       </Button>
     </div>

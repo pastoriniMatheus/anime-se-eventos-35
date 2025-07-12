@@ -34,8 +34,8 @@ export const useUpdateLeadStatus = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ leadId, statusId, notes }: { leadId: string; statusId: string; notes?: string }) => {
-      console.log('🔄 Atualizando status do lead:', { leadId, statusId, notes });
+    mutationFn: async ({ leadId, statusId }: { leadId: string; statusId: string }) => {
+      console.log('🔄 Atualizando status do lead:', { leadId, statusId });
       
       // Primeiro buscar o status pelo ID para obter o nome
       const { data: statusData, error: statusError } = await supabase
@@ -75,8 +75,7 @@ export const useUpdateLeadStatus = () => {
         const { data: callbackResponse, error: callbackError } = await supabase.functions.invoke('lead-status-callback', {
           body: {
             lead_id: leadId,
-            status_name: statusData.name,
-            notes: notes || null
+            status_name: statusData.name
           }
         });
 
