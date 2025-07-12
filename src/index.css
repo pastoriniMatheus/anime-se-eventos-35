@@ -38,6 +38,7 @@
 
     --radius: 0.5rem;
 
+    /* Sidebar/Menu colors */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 217 91% 60%;
@@ -46,6 +47,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Custom color properties */
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
 
     /* Gradient variables */
     --gradient-start: #6366f1;
@@ -102,22 +107,40 @@
 
   body {
     @apply bg-background text-foreground;
+    /* O fundo do body será controlado dinamicamente pelo DynamicColorProvider */
   }
 
   /* Aplicar cores dinâmicas aos botões */
   .btn-primary {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
+    transition: all 0.2s ease-in-out;
   }
 
   .btn-primary:hover {
     background-color: hsl(var(--primary-hover, var(--primary)));
+    transform: translateY(-1px);
   }
 
-  /* Aplicar cores dinâmicas aos links ativos */
-  .nav-link-active {
+  /* Cores dinâmicas para o menu lateral */
+  .sidebar-nav-item {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200;
+    color: hsl(var(--sidebar-foreground));
+  }
+
+  .sidebar-nav-item:hover {
+    background-color: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-accent-foreground));
+  }
+
+  .sidebar-nav-item.active {
     background-color: hsl(var(--sidebar-primary));
     color: hsl(var(--sidebar-primary-foreground));
+  }
+
+  .sidebar-nav-item.active:hover {
+    background-color: hsl(var(--sidebar-primary));
+    opacity: 0.9;
   }
 
   /* Aplicar cores dinâmicas aos elementos de destaque */
@@ -129,6 +152,23 @@
     background-color: hsl(var(--accent));
   }
 
+  /* Success e Warning colors */
+  .success-color {
+    color: hsl(var(--success));
+  }
+
+  .success-bg {
+    background-color: hsl(var(--success));
+  }
+
+  .warning-color {
+    color: hsl(var(--warning));
+  }
+
+  .warning-bg {
+    background-color: hsl(var(--warning));
+  }
+
   /* Gradientes dinâmicos */
   .gradient-primary {
     background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
@@ -136,5 +176,35 @@
 
   .gradient-secondary {
     background: linear-gradient(135deg, var(--gradient-second-start), var(--gradient-second-end));
+  }
+
+  /* Melhor aplicação de cores nos cards do dashboard */
+  .dashboard-card {
+    @apply bg-card text-card-foreground border border-border;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px hsl(var(--border) / 0.15);
+  }
+
+  /* Estilo para inputs com cores dinâmicas */
+  .dynamic-input {
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+
+  .dynamic-input:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+}
+
+/* Animações suaves para transições de cor */
+@layer components {
+  .color-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
 }

@@ -37,115 +37,103 @@ export const DynamicColorProvider = ({ children }: DynamicColorProviderProps) =>
         return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
       };
 
+      // Função para criar variação mais escura para hover
+      const darkenColor = (hsl: string, amount: number = 10) => {
+        const [h, s, l] = hsl.split(' ').map(v => parseInt(v));
+        return `${h} ${s}% ${Math.max(0, l - amount)}%`;
+      };
+
       // Aplicar cores do sistema
       settings.forEach(setting => {
-        switch (setting.key) {
+        const key = setting.key;
+        const value = typeof setting.value === 'string' ? setting.value : JSON.stringify(setting.value);
+        
+        if (!value || !value.startsWith('#')) return;
+
+        const hslValue = hexToHsl(value);
+        
+        switch (key) {
           // Cores principais
           case 'visual_primary_color':
-            if (setting.value) {
-              root.style.setProperty('--primary', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--primary', hslValue);
+            root.style.setProperty('--primary-hover', darkenColor(hslValue));
+            root.style.setProperty('--sidebar-primary', hslValue);
+            root.style.setProperty('--ring', hslValue);
             break;
           case 'visual_secondary_color':
-            if (setting.value) {
-              root.style.setProperty('--secondary', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--secondary', hslValue);
             break;
           case 'visual_accent_color':
-            if (setting.value) {
-              root.style.setProperty('--accent', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--accent', hslValue);
+            root.style.setProperty('--sidebar-accent', hslValue);
             break;
           case 'visual_success_color':
-            if (setting.value) {
-              root.style.setProperty('--success', hexToHsl(setting.value));
-            }
+            // Criar custom property para success
+            root.style.setProperty('--success', hslValue);
             break;
           case 'visual_warning_color':
-            if (setting.value) {
-              root.style.setProperty('--warning', hexToHsl(setting.value));
-            }
+            // Criar custom property para warning
+            root.style.setProperty('--warning', hslValue);
             break;
           case 'visual_danger_color':
-            if (setting.value) {
-              root.style.setProperty('--destructive', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--destructive', hslValue);
             break;
 
           // Cores do layout
           case 'visual_background_color':
-            if (setting.value) {
-              root.style.setProperty('--background', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--background', hslValue);
+            // Aplicar ao body também
+            document.body.style.backgroundColor = `hsl(${hslValue})`;
             break;
           case 'visual_surface_color':
-            if (setting.value) {
-              root.style.setProperty('--card', hexToHsl(setting.value));
-              root.style.setProperty('--popover', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--card', hslValue);
+            root.style.setProperty('--popover', hslValue);
             break;
           case 'visual_border_color':
-            if (setting.value) {
-              root.style.setProperty('--border', hexToHsl(setting.value));
-              root.style.setProperty('--input', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--border', hslValue);
+            root.style.setProperty('--input', hslValue);
+            root.style.setProperty('--sidebar-border', hslValue);
             break;
 
           // Cores do texto
           case 'visual_text_primary':
-            if (setting.value) {
-              root.style.setProperty('--foreground', hexToHsl(setting.value));
-              root.style.setProperty('--card-foreground', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--foreground', hslValue);
+            root.style.setProperty('--card-foreground', hslValue);
+            root.style.setProperty('--popover-foreground', hslValue);
+            root.style.setProperty('--sidebar-foreground', hslValue);
             break;
           case 'visual_text_secondary':
-            if (setting.value) {
-              root.style.setProperty('--muted-foreground', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--muted-foreground', hslValue);
             break;
           case 'visual_text_muted':
-            if (setting.value) {
-              root.style.setProperty('--muted', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--muted', hslValue);
             break;
 
-          // Cores do menu
+          // Cores do menu/navegação
           case 'visual_menu_background':
-            if (setting.value) {
-              root.style.setProperty('--sidebar-background', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--sidebar-background', hslValue);
             break;
           case 'visual_menu_active':
-            if (setting.value) {
-              root.style.setProperty('--sidebar-primary', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--sidebar-primary', hslValue);
+            root.style.setProperty('--sidebar-primary-foreground', '0 0% 98%');
             break;
           case 'visual_menu_hover':
-            if (setting.value) {
-              root.style.setProperty('--sidebar-accent', hexToHsl(setting.value));
-            }
+            root.style.setProperty('--sidebar-accent', hslValue);
+            root.style.setProperty('--sidebar-accent-foreground', '240 5.9% 10%');
             break;
 
           // Gradientes (aplicados via CSS custom properties)
           case 'visual_gradient_start':
-            if (setting.value) {
-              root.style.setProperty('--gradient-start', setting.value);
-            }
+            root.style.setProperty('--gradient-start', value);
             break;
           case 'visual_gradient_end':
-            if (setting.value) {
-              root.style.setProperty('--gradient-end', setting.value);
-            }
+            root.style.setProperty('--gradient-end', value);
             break;
           case 'visual_gradient_second_start':
-            if (setting.value) {
-              root.style.setProperty('--gradient-second-start', setting.value);
-            }
+            root.style.setProperty('--gradient-second-start', value);
             break;
           case 'visual_gradient_second_end':
-            if (setting.value) {
-              root.style.setProperty('--gradient-second-end', setting.value);
-            }
+            root.style.setProperty('--gradient-second-end', value);
             break;
         }
       });

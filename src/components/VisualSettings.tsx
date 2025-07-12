@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Eye, Save, Upload, Palette, Layout, Sparkles } from 'lucide-react';
+import { Eye, Save, Upload, Palette, Layout, Sparkles, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSystemSettings, useUpdateSystemSetting } from '@/hooks/useSystemSettings';
+import ColorTemplates from './ColorTemplates';
 
 const VisualSettings = () => {
   const { toast } = useToast();
@@ -25,33 +26,33 @@ const VisualSettings = () => {
     faviconUrl: '',
     
     // Cores do Sistema
-    primaryColor: '#3b82f6',        // Cor principal (botões principais, links)
-    secondaryColor: '#f59e0b',      // Cor secundária (botões secundários)
-    accentColor: '#10b981',         // Cor de destaque (badges, notificações)
-    successColor: '#22c55e',        // Cor de sucesso
-    warningColor: '#f59e0b',        // Cor de aviso
-    dangerColor: '#ef4444',         // Cor de perigo
+    primaryColor: '#3b82f6',
+    secondaryColor: '#f59e0b',
+    accentColor: '#10b981',
+    successColor: '#22c55e',
+    warningColor: '#f59e0b',
+    dangerColor: '#ef4444',
     
     // Cores do Layout
-    backgroundColor: '#ffffff',      // Fundo geral da aplicação
-    surfaceColor: '#f8fafc',        // Fundo de cards e containers
-    borderColor: '#e2e8f0',         // Bordas e divisórias
+    backgroundColor: '#ffffff',
+    surfaceColor: '#f8fafc',
+    borderColor: '#e2e8f0',
     
     // Cores do Texto
-    textPrimary: '#1e293b',         // Texto principal
-    textSecondary: '#64748b',       // Texto secundário
-    textMuted: '#94a3b8',           // Texto menos importante
+    textPrimary: '#1e293b',
+    textSecondary: '#64748b',
+    textMuted: '#94a3b8',
     
     // Cores do Menu/Navegação
-    menuBackground: '#ffffff',       // Fundo do menu
-    menuActive: '#3b82f6',          // Item de menu ativo
-    menuHover: '#f1f5f9',           // Hover no menu
+    menuBackground: '#ffffff',
+    menuActive: '#3b82f6',
+    menuHover: '#f1f5f9',
     
     // Gradientes do Dashboard
-    gradientStart: '#6366f1',       // Início do gradiente
-    gradientEnd: '#8b5cf6',         // Fim do gradiente
-    gradientSecondStart: '#ec4899', // Segundo gradiente início
-    gradientSecondEnd: '#f97316',   // Segundo gradiente fim
+    gradientStart: '#6366f1',
+    gradientEnd: '#8b5cf6',
+    gradientSecondStart: '#ec4899',
+    gradientSecondEnd: '#f97316',
   });
 
   useEffect(() => {
@@ -235,10 +236,12 @@ const VisualSettings = () => {
       )}
       <div className="flex items-center space-x-3">
         <div 
-          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm"
+          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm cursor-pointer"
           style={{ backgroundColor: value }}
+          onClick={() => document.getElementById(`color-${label}`)?.click()}
         />
         <Input
+          id={`color-${label}`}
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -267,8 +270,12 @@ const VisualSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="identity" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="templates" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="templates" className="flex items-center space-x-2">
+              <Wand2 className="h-4 w-4" />
+              <span>Templates</span>
+            </TabsTrigger>
             <TabsTrigger value="identity" className="flex items-center space-x-2">
               <Layout className="h-4 w-4" />
               <span>Identidade</span>
@@ -286,6 +293,10 @@ const VisualSettings = () => {
               <span>Prévia</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="templates" className="space-y-6">
+            <ColorTemplates onTemplateApply={() => window.location.reload()} />
+          </TabsContent>
 
           <TabsContent value="identity" className="space-y-6">
             <div className="space-y-4">
@@ -447,7 +458,7 @@ const VisualSettings = () => {
                     label="Fundo Principal"
                     value={visualConfig.backgroundColor}
                     onChange={(value) => handleChange('backgroundColor', value)}
-                    description="Fundo geral da aplicação"
+                    description="Fundo geral da aplicação (body)"
                   />
                   <ColorPicker
                     label="Fundo de Superfície"
@@ -499,7 +510,7 @@ const VisualSettings = () => {
                     label="Fundo do Menu"
                     value={visualConfig.menuBackground}
                     onChange={(value) => handleChange('menuBackground', value)}
-                    description="Fundo da barra de navegação"
+                    description="Fundo da barra de navegação lateral"
                   />
                   <ColorPicker
                     label="Item Ativo do Menu"
