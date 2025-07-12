@@ -18,6 +18,7 @@
 
     --primary: 320 100% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 320 100% 40%;
 
     --secondary: 330 81% 60%;
     --secondary-foreground: 0 0% 100%;
@@ -59,6 +60,7 @@
 
     --primary: 320 100% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 320 100% 50%;
 
     --secondary: 330 81% 70%;
     --secondary-foreground: 0 0% 100%;
@@ -93,5 +95,30 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Aplicar cores dinâmicas aos botões */
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-primary:hover {
+    background-color: hsl(var(--primary-hover, var(--primary)));
+  }
+
+  /* Aplicar cores dinâmicas aos links ativos */
+  .nav-link-active {
+    background-color: hsl(var(--sidebar-primary));
+    color: hsl(var(--sidebar-primary-foreground));
+  }
+
+  /* Aplicar cores dinâmicas aos elementos de destaque */
+  .accent-color {
+    color: hsl(var(--accent));
+  }
+
+  .accent-bg {
+    background-color: hsl(var(--accent));
   }
 }

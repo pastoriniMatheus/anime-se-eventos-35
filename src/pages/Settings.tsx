@@ -23,6 +23,8 @@ const Settings = () => {
   const [activeMainTab, setActiveMainTab] = useState('webhooks');
   const [activeSecondaryTab, setActiveSecondaryTab] = useState('webhooks');
   const [activeMessageTab, setActiveMessageTab] = useState('new-leads');
+  const [activePersonalizationTab, setActivePersonalizationTab] = useState('visual');
+  const [activeProductsTab, setActiveProductsTab] = useState('courses');
   const { courseNomenclature, postgraduateNomenclature } = useNomenclature();
   const supabaseUrl = "https://iznfrkdsmbtynmifqcdd.supabase.co";
 
@@ -34,7 +36,7 @@ const Settings = () => {
       </div>
 
       <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="webhooks" className="flex items-center space-x-2">
             <Webhook className="h-4 w-4" />
             <span>Webhooks & APIs</span>
@@ -46,10 +48,6 @@ const Settings = () => {
           <TabsTrigger value="personalization" className="flex items-center space-x-2">
             <Palette className="h-4 w-4" />
             <span>Personalização</span>
-          </TabsTrigger>
-          <TabsTrigger value="products" className="flex items-center space-x-2">
-            <Package className="h-4 w-4" />
-            <span>{courseNomenclature}</span>
           </TabsTrigger>
           <TabsTrigger value="form" className="flex items-center space-x-2">
             <Settings2 className="h-4 w-4" />
@@ -96,11 +94,12 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="personalization">
-          <Tabs defaultValue="visual" className="space-y-4">
-            <TabsList>
+          <Tabs value={activePersonalizationTab} onValueChange={setActivePersonalizationTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="visual">Cores e Visual</TabsTrigger>
               <TabsTrigger value="nomenclature">Nomenclaturas</TabsTrigger>
               <TabsTrigger value="status">Status de Leads</TabsTrigger>
+              <TabsTrigger value="products">Produtos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="visual">
@@ -114,22 +113,22 @@ const Settings = () => {
             <TabsContent value="status">
               <StatusManager />
             </TabsContent>
-          </Tabs>
-        </TabsContent>
 
-        <TabsContent value="products">
-          <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="courses">{courseNomenclature}</TabsTrigger>
-              <TabsTrigger value="postgraduate">{postgraduateNomenclature}</TabsTrigger>
-            </TabsList>
+            <TabsContent value="products">
+              <Tabs value={activeProductsTab} onValueChange={setActiveProductsTab} className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="courses">{courseNomenclature}</TabsTrigger>
+                  <TabsTrigger value="postgraduate">{postgraduateNomenclature}</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="courses">
-              <CourseManager />
-            </TabsContent>
+                <TabsContent value="courses">
+                  <CourseManager />
+                </TabsContent>
 
-            <TabsContent value="postgraduate">
-              <PostgraduateCourseManager />
+                <TabsContent value="postgraduate">
+                  <PostgraduateCourseManager />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         </TabsContent>
