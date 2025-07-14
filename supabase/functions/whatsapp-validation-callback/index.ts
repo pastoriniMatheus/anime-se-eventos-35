@@ -34,7 +34,13 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Criar cliente sem verificação de autorização
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
 
     // Aceitar tanto GET quanto POST para flexibilidade com n8n
     if (req.method !== 'POST' && req.method !== 'GET') {

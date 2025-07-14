@@ -83,6 +83,94 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_api_configs: {
+        Row: {
+          api_global: string
+          api_key: string
+          created_at: string
+          id: string
+          updated_at: string
+          url_servidor: string
+          user_id: string
+        }
+        Insert: {
+          api_global: string
+          api_key: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          url_servidor: string
+          user_id: string
+        }
+        Update: {
+          api_global?: string
+          api_key?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          url_servidor?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evolution_api_configs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "authorized_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instancias_whatsapp: {
+        Row: {
+          ativa: boolean | null
+          criada_em: string
+          id: string
+          nome: string
+          status: string | null
+          tipo: string | null
+          ultima_utilizacao: string | null
+          updated_at: string
+          url_custom: string | null
+          usuario_id: string
+          uuid_api: string | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          criada_em?: string
+          id?: string
+          nome: string
+          status?: string | null
+          tipo?: string | null
+          ultima_utilizacao?: string | null
+          updated_at?: string
+          url_custom?: string | null
+          usuario_id: string
+          uuid_api?: string | null
+        }
+        Update: {
+          ativa?: boolean | null
+          criada_em?: string
+          id?: string
+          nome?: string
+          status?: string | null
+          tipo?: string | null
+          ultima_utilizacao?: string | null
+          updated_at?: string
+          url_custom?: string | null
+          usuario_id?: string
+          uuid_api?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instancias_whatsapp_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_statuses: {
         Row: {
           color: string
@@ -454,6 +542,110 @@ export type Database = {
           value?: string | null
         }
         Relationships: []
+      }
+      whatsapp_delay_configs: {
+        Row: {
+          created_at: string
+          id: string
+          tempo_maximo: number | null
+          tempo_medio: number | null
+          tempo_minimo: number | null
+          typing_delay_max: number | null
+          typing_delay_min: number | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tempo_maximo?: number | null
+          tempo_medio?: number | null
+          tempo_minimo?: number | null
+          typing_delay_max?: number | null
+          typing_delay_min?: number | null
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tempo_maximo?: number | null
+          tempo_medio?: number | null
+          tempo_minimo?: number | null
+          typing_delay_max?: number | null
+          typing_delay_min?: number | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_delay_configs_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: true
+            referencedRelation: "authorized_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_envios: {
+        Row: {
+          callback_url: string | null
+          conteudo: string
+          data_envio: string
+          delivered_at: string | null
+          delivery_code: string | null
+          error_message: string | null
+          id: string
+          instancia_id: string | null
+          numero_destino: string
+          status: string | null
+          tipo: string | null
+          usuario_id: string
+        }
+        Insert: {
+          callback_url?: string | null
+          conteudo: string
+          data_envio?: string
+          delivered_at?: string | null
+          delivery_code?: string | null
+          error_message?: string | null
+          id?: string
+          instancia_id?: string | null
+          numero_destino: string
+          status?: string | null
+          tipo?: string | null
+          usuario_id: string
+        }
+        Update: {
+          callback_url?: string | null
+          conteudo?: string
+          data_envio?: string
+          delivered_at?: string | null
+          delivery_code?: string | null
+          error_message?: string | null
+          id?: string
+          instancia_id?: string | null
+          numero_destino?: string
+          status?: string | null
+          tipo?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_envios_instancia_id_fkey"
+            columns: ["instancia_id"]
+            isOneToOne: false
+            referencedRelation: "instancias_whatsapp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_envios_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_validations: {
         Row: {
